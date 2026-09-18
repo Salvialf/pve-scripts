@@ -187,8 +187,8 @@ advanced_settings() {
     var_version=""
     while [ -z "$var_version" ]; do
       if var_version=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "DEBIAN VERSION" --radiolist "Choose Version" 10 58 2 \
-        "11" "Bullseye" OFF \
         "12" "Bookworm" OFF \
+        "13" "Trixie" OFF \
         3>&1 1>&2 2>&3); then
         if [ -n "$var_version" ]; then
           echo -e "${DGN}Using $var_os Version: ${BGN}$var_version${CL}"
@@ -490,7 +490,15 @@ install_script() {
     systemctl -q stop ping-instances.service
   fi
   NEXTID=$(pvesh get /cluster/nextid)
-  timezone=$(cat /etc/timezone)
+  # timedatectl is more reliable than /etc/timezone on newer systemd-based
+  # hosts (e.g. Debian 13); fall back to /etc/timezone for older systems.
+  if command -v timedatectl >/dev/null 2>&1; then
+    timezone=$(timedatectl show --value --property=Timezone 2>/dev/null || echo "UTC")
+  elif [ -f /etc/timezone ]; then
+    timezone=$(cat /etc/timezone)
+  else
+    timezone="UTC"
+  fi
   header_info
   if (whiptail --backtitle "Proxmox VE Helper Scripts" --title "SETTINGS" --yesno "Use Default Settings?" --no-button Advanced 10 58); then
     header_info
@@ -625,6 +633,12 @@ EOF
   msg_info "Starting LXC Container"
   pct start "$CTID"
   msg_ok "Started LXC Container"
+  # Fix Debian 13 LXC template bug where / is owned by nobody:nogroup
+  # (must be done from the host, an unprivileged container cannot chown /)
+  ROOTFS_MP="/var/lib/lxc/$CTID/rootfs"
+  if [ -d "$ROOTFS_MP" ] && [ "$(stat -c '%U' "$ROOTFS_MP")" != "root" ]; then
+    chown root:root "$ROOTFS_MP" 2>/dev/null || true
+  fi
   if [ "$var_os" == "alpine" ]; then
     sleep 3
         pct exec "$CTID" -- /bin/sh -c 'cat <<EOF >/etc/apk/repositories
