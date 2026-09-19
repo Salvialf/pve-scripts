@@ -2,6 +2,7 @@
 
 # Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
+# Modified by: Salvialf
 # License: MIT
 # https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
@@ -119,7 +120,7 @@ function select_storage() {
   else
     local STORAGE
     while [ -z "${STORAGE:+x}" ]; do
-      STORAGE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "Storage Pools" --radiolist \
+      STORAGE=$(whiptail --backtitle "Salvialf PVE scripts" --title "Storage Pools" --radiolist \
       "Which storage pool you would like to use for the ${CONTENT_LABEL,,}?\nTo make a selection, use the Spacebar.\n" \
       16 $(($MSG_MAX_LENGTH + 23)) 6 \
       "${MENU[@]}" 3>&1 1>&2 2>&3) || exit "Menu aborted."
