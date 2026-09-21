@@ -158,14 +158,14 @@ msg_ok "Updated LXC Template List"
 
 # Get LXC template string
 TEMPLATE_SEARCH=${PCT_OSTYPE}-${PCT_OSVERSION:-}
-mapfile -t TEMPLATES < <(pveam available -section system | sed -n "s/.*\($TEMPLATE_SEARCH.*\)/\1/p" | sort -t - -k 2 -V)
+mapfile -t TEMPLATES < <(pveam available -section system | awk '{print $2}' | sed -n "s/.*\($TEMPLATE_SEARCH.*\)/\1/p" | sort -t - -k 2 -V)
 [ ${#TEMPLATES[@]} -gt 0 ] || exit "Unable to find a template when searching for '$TEMPLATE_SEARCH'."
 TEMPLATE="${TEMPLATES[-1]}"
 
 # Download LXC template if needed
-if ! pveam list $TEMPLATE_STORAGE | grep -q $TEMPLATE; then
+if ! pveam list $TEMPLATE_STORAGE | grep -q "$TEMPLATE"; then
   msg_info "Downloading LXC Template"
-  pveam download $TEMPLATE_STORAGE $TEMPLATE >/dev/null ||
+  pveam download $TEMPLATE_STORAGE "$TEMPLATE" >/dev/null ||
     exit "A problem occured while downloading the LXC template."
   msg_ok "Downloaded LXC Template"
 fi
