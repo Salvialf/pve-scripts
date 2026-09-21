@@ -25,6 +25,7 @@ var_disk="16"
 var_cpu="2"
 var_ram="2048"
 var_os="debian"
+var_os_locked="yes"
 var_version="12"
 variables
 color

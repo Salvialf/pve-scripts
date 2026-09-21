@@ -2,18 +2,19 @@
 source <(curl -s https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/build.func)
 # Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
+# Modified by: Salvialf
 # License: MIT
 # https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
 function header_info {
 clear
 cat <<"EOF"
-    ____       __    _           
-   / __ \___  / /_  (_)___  ____ 
+    ____       __    _
+   / __ \___  / /_  (_)___  ____
   / / / / _ \/ __ \/ / __ `/ __ \
  / /_/ /  __/ /_/ / / /_/ / / / /
-/_____/\___/_.___/_/\__,_/_/ /_/ 
-                                 
+/_____/\___/_.___/_/\__,_/_/ /_/
+
 EOF
 }
 header_info
@@ -23,6 +24,7 @@ var_disk="4"
 var_cpu="1"
 var_ram="512"
 var_os="debian"
+var_os_locked="yes"
 var_version="12"
 variables
 color
