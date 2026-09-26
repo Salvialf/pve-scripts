@@ -487,6 +487,11 @@ advanced_settings() {
   fi
   echo -e "${DGN}Enable Verbose Mode: ${BGN}$VERB${CL}"
 
+  # App-specific questions, optionally defined by ct/<app>.sh
+  if declare -F app_settings >/dev/null; then
+    app_settings
+  fi
+
   if (whiptail --backtitle "Salvialf PVE scripts" --title "ADVANCED SETTINGS COMPLETE" --yesno "Ready to create ${APP} LXC?" 10 58); then
     echo -e "${RD}Creating a ${APP} LXC using the above advanced settings${CL}"
   else

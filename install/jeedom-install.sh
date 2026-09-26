@@ -15,32 +15,14 @@ setting_up_container
 network_check
 update_os
 
-msg_info "Installing Dependencies"
-$STD apt-get install -y \
-  lsb-release \
-  git
-msg_ok "Installed Dependencies"
-
-DEFAULT_BRANCH="master"
-REPO_URL="https://github.com/jeedom/core.git"
-
-echo
-while true; do
-  read -rp "Enter Jeedom branch to install (master, release, develop...) (Default: ${DEFAULT_BRANCH}): " BRANCH
-  BRANCH="${BRANCH:-$DEFAULT_BRANCH}"
-
-  if git ls-remote --heads "$REPO_URL" "refs/heads/$BRANCH" | grep -q .; then
-    break
-  else
-    msg_error "Branch '$BRANCH' does not exist on remote. Please try again."
-  fi
-done
+# Set by ct/jeedom.sh's advanced settings
+BRANCH="${JEEDOM_BRANCH:-master}"
 
 msg_info "Downloading Jeedom installation script"
 cd /tmp
 wget -q https://raw.githubusercontent.com/jeedom/core/"${BRANCH}"/install/install.sh
 chmod +x install.sh
-msg_ok "Installation script downloaded"
+msg_ok "Installation script downloaded (branch: ${BRANCH})"
 
 msg_info "Installing Jeedom main dependencies, please wait"
 $STD ./install.sh -v "$BRANCH" -s 2

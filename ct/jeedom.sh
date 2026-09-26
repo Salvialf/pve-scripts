@@ -55,6 +55,41 @@ function default_settings() {
   echo_default
 }
 
+function app_settings() {
+  local branch_list branch branches=()
+  JEEDOM_BRANCH=$(whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" --menu "Choose the Jeedom branch to install" 14 58 4 \
+    "master" "Stable" \
+    "release" "Pre-release" \
+    "develop" "Development" \
+    "other" "Other branch" \
+    3>&1 1>&2 2>&3) || exit-script
+
+  if [ "$JEEDOM_BRANCH" == "other" ]; then
+    # alpha, beta and V4-stable are obsolete but still on the repo
+    branch_list=$(curl -fsSL "https://api.github.com/repos/jeedom/core/branches?per_page=100" \
+      | grep -o '"name": *"[^"]*"' | cut -d'"' -f4 \
+      | grep -vxE 'master|release|develop|alpha|beta|V4-stable' || true)
+    for branch in $branch_list; do
+      branches+=("$branch" "")
+    done
+
+    if [ ${#branches[@]} -gt 0 ]; then
+      JEEDOM_BRANCH=$(whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" --menu "Choose another branch (not supported)" 20 70 12 \
+        "${branches[@]}" \
+        3>&1 1>&2 2>&3) || exit-script
+    else
+      while true; do
+        JEEDOM_BRANCH=$(whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" --inputbox "Branch list unavailable, enter the branch name" 8 58 3>&1 1>&2 2>&3) || exit-script
+        curl -fsI "https://raw.githubusercontent.com/jeedom/core/${JEEDOM_BRANCH}/install/install.sh" >/dev/null && break
+        whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" --msgbox "Branch '${JEEDOM_BRANCH}' not found" 8 58
+      done
+    fi
+  fi
+
+  export JEEDOM_BRANCH
+  echo -e "${DGN}Using Jeedom Branch: ${BGN}$JEEDOM_BRANCH${CL}"
+}
+
 function update_script() {
 header_info
 if [[ ! -f /var/www/html/core/config/version ]]; then msg_error "No ${APP} Installation Found!"; exit; fi
