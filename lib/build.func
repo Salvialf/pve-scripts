@@ -672,11 +672,14 @@ EOF'
 
 }
 
+# This function prints the container's IPv4 address on eth0.
+get_ip() {
+  pct exec "$CTID" ip a s dev eth0 | awk '/inet / {print $2}' | cut -d/ -f1
+}
+
 # This function sets the description of the container.
 description() {
   : # no-op: everything below is commented out for now
-  # IP is unused for now, no app script reads it yet.
-  # IP=$(pct exec "$CTID" ip a s dev eth0 | awk '/inet / {print $2}' | cut -d/ -f1)
   # tteck's original also set a logo + Ko-fi link here, text not decided yet.
   # pct set "$CTID" -description "<div align='center'><a href='https://Helper-Scripts.com' target='_blank' rel='noopener noreferrer'><img src='https://raw.githubusercontent.com/tteck/Proxmox/main/misc/images/logo-81x112.png'/></a>
   #

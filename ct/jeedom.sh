@@ -71,3 +71,6 @@ build_container
 description
 
 msg_ok "Completed Successfully!\n"
+echo -e "Access ${APP} at the following URL:
+         ${BL}http://$(get_ip)${CL}
+         Default login: ${BL}admin${CL}/${BL}admin${CL}\n"
