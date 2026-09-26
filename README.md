@@ -34,7 +34,7 @@ As with any script found online, read it before running it on your host.
 
 ## Background
 
-The shared framework in `lib/` and the first scripts come from [tteck](https://github.com/tteck)'s work, archived in late 2024. pve-scripts is not a fork meant to follow his project, but an update of his work for current Proxmox VE and Debian versions.
+The shared framework in `lib/` and the first scripts come from [tteck](https://github.com/tteck)'s work, archived in late 2024. pve-scripts is not a plain fork of his project, but an update of his work for current Proxmox VE and Debian versions.
 
 It is also distinct from [community-scripts](https://github.com/community-scripts/ProxmoxVE), the project that took over tteck's scripts: pve-scripts is an independent project, neither a fork of community-scripts nor affiliated with it.
 
