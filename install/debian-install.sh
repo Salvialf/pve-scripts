@@ -2,6 +2,7 @@
 
 # Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
+# Modified by: Salvialf
 # License: MIT
 # https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
@@ -14,9 +15,9 @@ network_check
 update_os
 
 msg_info "Installing Dependencies"
-$STD apt-get install -y curl
-$STD apt-get install -y sudo
-$STD apt-get install -y mc
+$STD apt-get install -y \
+  curl \
+  sudo
 msg_ok "Installed Dependencies"
 
 motd_ssh
