@@ -57,7 +57,15 @@ function default_settings() {
 
 function app_settings() {
   local branch_list branch branches=()
-  JEEDOM_BRANCH=$(whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" --menu "Choose the Jeedom branch to install" 14 58 4 \
+  # Preselect a branch passed on the command line
+  local provided="${JEEDOM_BRANCH:-}" preselect=() other_preselect=()
+  case "$provided" in
+    "") ;;
+    master | release | develop) preselect=(--default-item "$provided") ;;
+    *) preselect=(--default-item "other"); other_preselect=(--default-item "$provided") ;;
+  esac
+
+  JEEDOM_BRANCH=$(whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" "${preselect[@]}" --menu "Choose the Jeedom branch to install" 14 58 4 \
     "master" "Stable" \
     "release" "Pre-release" \
     "develop" "Development" \
@@ -74,13 +82,13 @@ function app_settings() {
     done
 
     if [ ${#branches[@]} -gt 0 ]; then
-      JEEDOM_BRANCH=$(whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" --menu "Choose another branch (not supported)" 20 70 12 \
+      JEEDOM_BRANCH=$(whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" "${other_preselect[@]}" --menu "Choose another branch (not supported)" 20 70 12 \
         "${branches[@]}" \
         3>&1 1>&2 2>&3) || exit-script
     else
       while true; do
         JEEDOM_BRANCH=$(whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" --inputbox "Branch list unavailable, enter the branch name" 8 58 3>&1 1>&2 2>&3) || exit-script
-        curl -fsI "https://raw.githubusercontent.com/jeedom/core/${JEEDOM_BRANCH}/install/install.sh" >/dev/null && break
+        jeedom_branch_exists "$JEEDOM_BRANCH" && break
         whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" --msgbox "Branch '${JEEDOM_BRANCH}' not found" 8 58
       done
     fi
@@ -88,6 +96,10 @@ function app_settings() {
 
   export JEEDOM_BRANCH
   echo -e "${DGN}Using Jeedom Branch: ${BGN}$JEEDOM_BRANCH${CL}"
+}
+
+function jeedom_branch_exists() {
+  curl -fsI "https://raw.githubusercontent.com/jeedom/core/${1}/install/install.sh" >/dev/null
 }
 
 function update_script() {
@@ -100,6 +112,12 @@ msg_ok "Updated $APP LXC OS packages"
 echo -e "You can now update Jeedom itself from its Web UI."
 exit
 }
+
+# JEEDOM_BRANCH can be passed on the command line, catch a typo before creating anything
+if [ -n "${JEEDOM_BRANCH:-}" ] && ! jeedom_branch_exists "$JEEDOM_BRANCH"; then
+  msg_error "Jeedom branch '${JEEDOM_BRANCH}' not found"
+  exit 1
+fi
 
 start
 build_container

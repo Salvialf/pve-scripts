@@ -15,14 +15,15 @@ setting_up_container
 network_check
 update_os
 
-# Set by ct/jeedom.sh's advanced settings
+# Set by ct/jeedom.sh (advanced settings or command line)
 BRANCH="${JEEDOM_BRANCH:-master}"
+msg_ok "Installing Jeedom from branch: ${BRANCH}"
 
 msg_info "Downloading Jeedom installation script"
 cd /tmp
 wget -q https://raw.githubusercontent.com/jeedom/core/"${BRANCH}"/install/install.sh
 chmod +x install.sh
-msg_ok "Installation script downloaded (branch: ${BRANCH})"
+msg_ok "Installation script downloaded"
 
 msg_info "Installing Jeedom main dependencies, please wait"
 $STD ./install.sh -v "$BRANCH" -s 2
