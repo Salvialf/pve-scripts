@@ -158,7 +158,14 @@ msg_ok "Updated LXC Template List"
 
 # Get LXC template string
 TEMPLATE_SEARCH=${PCT_OSTYPE}-${PCT_OSVERSION:-}
-mapfile -t TEMPLATES < <(pveam available -section system | awk '{print $2}' | sed -n "s/.*\($TEMPLATE_SEARCH.*\)/\1/p" | sort -t - -k 2 -V)
+# Keep only the host's architecture (PVE 9 also lists arm64 templates)
+mapfile -t TEMPLATES < <(
+  pveam available -section system |
+    awk '{print $2}' |
+    grep "_$(dpkg --print-architecture)\.tar\." |
+    sed -n "s/.*\($TEMPLATE_SEARCH.*\)/\1/p" |
+    sort -t - -k 2 -V
+)
 [ ${#TEMPLATES[@]} -gt 0 ] || exit "Unable to find a template when searching for '$TEMPLATE_SEARCH'."
 TEMPLATE="${TEMPLATES[-1]}"
 
