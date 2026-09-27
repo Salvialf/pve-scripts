@@ -5,6 +5,7 @@ variables() {
   var_install="${NSAPP}-install"     # sets the var_install variable by appending "-install" to the value of NSAPP.
   INTEGER='^[0-9]+([.][0-9]+)?$'     # it defines the INTEGER regular expression pattern.
   SPINNER_PID=""                     # read by msg_* and error_handler, which can run before start()
+  BACKTITLE="Salvialf PVE scripts - ${APP} LXC" # shown on every whiptail window
 }
 
 # This function sets various color variables using ANSI escape codes for formatting text in the terminal.
@@ -157,9 +158,9 @@ echo_default() {
   echo -e "${DGN}Using Root Password: ${BGN}Automatic Login${CL}"
   echo -e "${DGN}Using Container ID: ${BGN}$NEXTID${CL}"
   echo -e "${DGN}Using Hostname: ${BGN}$NSAPP${CL}"
-  echo -e "${DGN}Using Disk Size: ${BGN}$var_disk${CL}${DGN}GB${CL}"
-  echo -e "${DGN}Allocated Cores ${BGN}$var_cpu${CL}"
-  echo -e "${DGN}Allocated Ram ${BGN}$var_ram${CL}"
+  echo -e "${DGN}Using Disk Size: ${BGN}$var_disk GiB${CL}"
+  echo -e "${DGN}Using CPU Cores: ${BGN}$var_cpu${CL}"
+  echo -e "${DGN}Using RAM Size: ${BGN}$var_ram MiB${CL}"
   echo -e "${DGN}Using Bridge: ${BGN}vmbr0${CL}"
   echo -e "${DGN}Using Static IP Address: ${BGN}dhcp${CL}"
   echo -e "${DGN}Using Gateway IP Address: ${BGN}Default${CL}"
@@ -182,308 +183,213 @@ exit-script() {
   exit
 }
 
+# This function wraps whiptail: centered backtitle, sizes added after the box text, the answer is returned on stdout.
+# The box option must be directly followed by its text.
+wt() {
+  local args=() cols breaks msgbox="" rc=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --inputbox | --yesno)
+        args+=("$1" "$2" 0 58); shift 2 ;;
+      --msgbox)
+        msgbox="yes"
+        args+=("$1" "$2" 0 58); shift 2 ;;
+      --passwordbox)
+        # newt's auto-size has no case for passwordbox and hides the text: 8 rows for one line, plus one per \n
+        breaks="${2//\\n/}"
+        args+=("$1" "$2" $(((${#2} - ${#breaks}) / 2 + 8)) 58); shift 2 ;;
+      --menu | --radiolist | --checklist)
+        args+=("$1" "$2" 0 58 0); shift 2 ;;
+      *)
+        args+=("$1"); shift ;;
+    esac
+  done
+  # stdout is captured by the caller, ask the terminal directly
+  read -r _ cols < <(stty size </dev/tty)
+  whiptail --backtitle "$(printf '%*s' $(((cols - ${#BACKTITLE}) / 2)) '')$BACKTITLE" "${args[@]}" 3>&1 1>&2 2>&3 || rc=$?
+  # A msgbox has nothing to answer: ESC closes it like OK instead of failing under set -e
+  [ -n "$msgbox" ] && rc=0
+  return "$rc"
+}
+
+# This function prints the radiolist status of an item: ON when it matches the value to preselect.
+wt_status() {
+  [ "$1" == "$2" ] && echo ON || echo OFF
+}
+
 # This function allows the user to configure advanced settings for the script.
 advanced_settings() {
-  whiptail --backtitle "Salvialf PVE scripts" --msgbox --title "Here is an instructional tip:" "To make a selection, use the Spacebar." 8 58
-  if [ "${var_os_locked:-no}" != "yes" ]; then
-    whiptail --backtitle "Salvialf PVE scripts" --msgbox --title "Default distribution for $APP" "${var_os} ${var_version} \n \nIf the default Linux distribution is not adhered to, script support will be discontinued. \n" 10 58
-  fi
   if [ "$var_os" != "alpine" ] && [ "${var_os_locked:-no}" != "yes" ]; then
-    var_os=""
-    while [ -z "$var_os" ]; do
-      if var_os=$(whiptail --backtitle "Salvialf PVE scripts" --title "DISTRIBUTION" --radiolist "Choose Distribution:" 10 58 2 \
-        "debian" "" OFF \
-        "ubuntu" "" OFF \
-        3>&1 1>&2 2>&3); then
-        if [ -n "$var_os" ]; then
-          echo -e "${DGN}Using Distribution: ${BGN}$var_os${CL}"
-        fi
-      else
-        exit-script
-      fi
-    done
+    var_os=$(wt --title "DISTRIBUTION" --radiolist "Choose the distribution" \
+      "debian" "" "$(wt_status debian "$var_os")" \
+      "ubuntu" "" "$(wt_status ubuntu "$var_os")") || exit-script
   fi
+  echo -e "${DGN}Using Distribution: ${BGN}$var_os${CL}"
 
   if [ "$var_os" == "debian" ]; then
-    var_version=""
-    while [ -z "$var_version" ]; do
-      if var_version=$(whiptail --backtitle "Salvialf PVE scripts" --title "DEBIAN VERSION" --radiolist "Choose Version" 10 58 2 \
-        "12" "Bookworm" OFF \
-        "13" "Trixie" OFF \
-        3>&1 1>&2 2>&3); then
-        if [ -n "$var_version" ]; then
-          echo -e "${DGN}Using $var_os Version: ${BGN}$var_version${CL}"
-        fi
-      else
-        exit-script
-      fi
-    done
+    var_version=$(wt --title "DEBIAN VERSION" --radiolist "Choose the Debian version" \
+      "12" "Bookworm" "$(wt_status 12 "$var_version")" \
+      "13" "Trixie" "$(wt_status 13 "$var_version")") || exit-script
+  elif [ "$var_os" == "ubuntu" ]; then
+    var_version=$(wt --title "UBUNTU VERSION" --radiolist "Choose the Ubuntu version" \
+      "20.04" "Focal" "$(wt_status 20.04 "$var_version")" \
+      "22.04" "Jammy" "$(wt_status 22.04 "$var_version")" \
+      "24.04" "Noble" "$(wt_status 24.04 "$var_version")") || exit-script
   fi
+  echo -e "${DGN}Using $var_os Version: ${BGN}$var_version${CL}"
 
-  if [ "$var_os" == "ubuntu" ]; then
-    var_version=""
-    while [ -z "$var_version" ]; do
-      if var_version=$(whiptail --backtitle "Salvialf PVE scripts" --title "UBUNTU VERSION" --radiolist "Choose Version" 10 58 3 \
-        "20.04" "Focal" OFF \
-        "22.04" "Jammy" OFF \
-        "24.04" "Noble" OFF \
-        3>&1 1>&2 2>&3); then
-        if [ -n "$var_version" ]; then
-          echo -e "${DGN}Using $var_os Version: ${BGN}$var_version${CL}"
-        fi
-      else
-        exit-script
-      fi
-    done
-  fi
-
-  CT_TYPE=""
-  while [ -z "$CT_TYPE" ]; do
-    if CT_TYPE=$(whiptail --backtitle "Salvialf PVE scripts" --title "CONTAINER TYPE" --radiolist "Choose Type" 10 58 2 \
-      "1" "Unprivileged" OFF \
-      "0" "Privileged" OFF \
-      3>&1 1>&2 2>&3); then
-      if [ -n "$CT_TYPE" ]; then
-        echo -e "${DGN}Using Container Type: ${BGN}$CT_TYPE${CL}"
-      fi
-    else
-      exit-script
-    fi
-  done
+  CT_TYPE=$(wt --title "CONTAINER TYPE" --radiolist "Choose the container type" \
+    "1" "Unprivileged" "$(wt_status 1 "${CT_TYPE:-1}")" \
+    "0" "Privileged" "$(wt_status 0 "${CT_TYPE:-1}")") || exit-script
+  echo -e "${DGN}Using Container Type: ${BGN}$CT_TYPE${CL}"
 
   while true; do
-    if PW1=$(whiptail --backtitle "Salvialf PVE scripts" --passwordbox "\nSet Root Password (needed for root ssh access)" 9 58 --title "PASSWORD (leave blank for automatic login)" 3>&1 1>&2 2>&3); then
-      if [[ ! -z "$PW1" ]]; then
-        if [[ "$PW1" == *" "* ]]; then
-          whiptail --msgbox "Password cannot contain spaces. Please try again." 8 58
-        elif [ ${#PW1} -lt 5 ]; then
-          whiptail --msgbox "Password must be at least 5 characters long. Please try again." 8 58
-        else
-          if PW2=$(whiptail --backtitle "Salvialf PVE scripts" --passwordbox "\nVerify Root Password" 9 58 --title "PASSWORD VERIFICATION" 3>&1 1>&2 2>&3); then
-            if [[ "$PW1" == "$PW2" ]]; then
-              PW="-password $PW1"
-              echo -e "${DGN}Using Root Password: ${BGN}********${CL}"
-              break
-            else
-              whiptail --msgbox "Passwords do not match. Please try again." 8 58
-            fi
-          else
-            exit-script
-          fi
-        fi
-      else
-        PW1="Automatic Login"
-        PW=""
-        echo -e "${DGN}Using Root Password: ${BGN}$PW1${CL}"
-        break
-      fi
-    else
-      exit-script
+    PW1=$(wt --passwordbox "Set the root password, required for root SSH access\nLeave blank for automatic console login" --title "ROOT PASSWORD") || exit-script
+    if [ -z "$PW1" ]; then
+      PW=""
+      echo -e "${DGN}Using Root Password: ${BGN}Automatic Login${CL}"
+      break
     fi
+    if [[ "$PW1" == *" "* ]]; then
+      wt --title "ROOT PASSWORD" --msgbox "Password cannot contain spaces. Please try again."
+      continue
+    fi
+    if [ ${#PW1} -lt 5 ]; then
+      wt --title "ROOT PASSWORD" --msgbox "Password must be at least 5 characters long. Please try again."
+      continue
+    fi
+    PW2=$(wt --passwordbox "Confirm the root password" --title "ROOT PASSWORD") || exit-script
+    if [[ "$PW1" == "$PW2" ]]; then
+      PW="-password $PW1"
+      echo -e "${DGN}Using Root Password: ${BGN}********${CL}"
+      break
+    fi
+    wt --title "ROOT PASSWORD" --msgbox "Passwords do not match. Please try again."
   done
 
+  CT_ID=$(wt --inputbox "Set the container ID" "$NEXTID" --title "CONTAINER ID") || exit-script
+  CT_ID="${CT_ID:-$NEXTID}"
+  echo -e "${DGN}Using Container ID: ${BGN}$CT_ID${CL}"
 
-  if CT_ID=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Set Container ID" 8 58 $NEXTID --title "CONTAINER ID" 3>&1 1>&2 2>&3); then
-    if [ -z "$CT_ID" ]; then
-      CT_ID="$NEXTID"
-      echo -e "${DGN}Using Container ID: ${BGN}$CT_ID${CL}"
-    else
-      echo -e "${DGN}Container ID: ${BGN}$CT_ID${CL}"
-    fi
-  else
-    exit
-  fi
+  CT_NAME=$(wt --inputbox "Set the hostname" "$NSAPP" --title "HOSTNAME") || exit-script
+  HN=$(echo ${CT_NAME,,} | tr -d ' ')
+  HN="${HN:-$NSAPP}"
+  echo -e "${DGN}Using Hostname: ${BGN}$HN${CL}"
 
-  if CT_NAME=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Set Hostname" 8 58 $NSAPP --title "HOSTNAME" 3>&1 1>&2 2>&3); then
-    if [ -z "$CT_NAME" ]; then
-      HN="$NSAPP"
-    else
-      HN=$(echo ${CT_NAME,,} | tr -d ' ')
-    fi
-    echo -e "${DGN}Using Hostname: ${BGN}$HN${CL}"
-  else
-    exit-script
+  DISK_SIZE=$(wt --inputbox "Set the disk size in GiB" "$var_disk" --title "DISK SIZE") || exit-script
+  DISK_SIZE="${DISK_SIZE:-$var_disk}"
+  if ! [[ $DISK_SIZE =~ $INTEGER ]]; then
+    echo -e "${RD}⚠ DISK SIZE MUST BE AN INTEGER NUMBER!${CL}"
+    advanced_settings
   fi
+  echo -e "${DGN}Using Disk Size: ${BGN}$DISK_SIZE GiB${CL}"
 
-  if DISK_SIZE=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Set Disk Size in GB" 8 58 $var_disk --title "DISK SIZE" 3>&1 1>&2 2>&3); then
-    if [ -z "$DISK_SIZE" ]; then
-      DISK_SIZE="$var_disk"
-      echo -e "${DGN}Using Disk Size: ${BGN}$DISK_SIZE${CL}"
-    else
-      if ! [[ $DISK_SIZE =~ $INTEGER ]]; then
-        echo -e "${RD}⚠ DISK SIZE MUST BE AN INTEGER NUMBER!${CL}"
-        advanced_settings
-      fi
-      echo -e "${DGN}Using Disk Size: ${BGN}$DISK_SIZE${CL}"
-    fi
-  else
-    exit-script
-  fi
+  CORE_COUNT=$(wt --inputbox "Set the number of CPU cores" "$var_cpu" --title "CPU CORES") || exit-script
+  CORE_COUNT="${CORE_COUNT:-$var_cpu}"
+  echo -e "${DGN}Using CPU Cores: ${BGN}$CORE_COUNT${CL}"
 
-  if CORE_COUNT=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Allocate CPU Cores" 8 58 $var_cpu --title "CORE COUNT" 3>&1 1>&2 2>&3); then
-    if [ -z "$CORE_COUNT" ]; then
-      CORE_COUNT="$var_cpu"
-      echo -e "${DGN}Allocated Cores: ${BGN}$CORE_COUNT${CL}"
-    else
-      echo -e "${DGN}Allocated Cores: ${BGN}$CORE_COUNT${CL}"
-    fi
-  else
-    exit-script
-  fi
+  RAM_SIZE=$(wt --inputbox "Set the RAM size in MiB" "$var_ram" --title "RAM") || exit-script
+  RAM_SIZE="${RAM_SIZE:-$var_ram}"
+  echo -e "${DGN}Using RAM Size: ${BGN}$RAM_SIZE MiB${CL}"
 
-  if RAM_SIZE=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Allocate RAM in MiB" 8 58 $var_ram --title "RAM" 3>&1 1>&2 2>&3); then
-    if [ -z "$RAM_SIZE" ]; then
-      RAM_SIZE="$var_ram"
-      echo -e "${DGN}Allocated RAM: ${BGN}$RAM_SIZE${CL}"
-    else
-      echo -e "${DGN}Allocated RAM: ${BGN}$RAM_SIZE${CL}"
-    fi
-  else
-    exit-script
-  fi
-
-  if BRG=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Set a Bridge" 8 58 vmbr0 --title "BRIDGE" 3>&1 1>&2 2>&3); then
-    if [ -z "$BRG" ]; then
-      BRG="vmbr0"
-      echo -e "${DGN}Using Bridge: ${BGN}$BRG${CL}"
-    else
-      echo -e "${DGN}Using Bridge: ${BGN}$BRG${CL}"
-    fi
-  else
-    exit-script
-  fi
+  BRG=$(wt --inputbox "Set the network bridge" vmbr0 --title "BRIDGE") || exit-script
+  BRG="${BRG:-vmbr0}"
+  echo -e "${DGN}Using Bridge: ${BGN}$BRG${CL}"
 
   while true; do
-    NET=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Set a Static IPv4 CIDR Address (/24)" 8 58 dhcp --title "IP ADDRESS" 3>&1 1>&2 2>&3)
-    exit_status=$?
-    if [ $exit_status -eq 0 ]; then
-      if [ "$NET" = "dhcp" ]; then
-        echo -e "${DGN}Using IP Address: ${BGN}$NET${CL}"
-        break
-      else
-        if [[ "$NET" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}/([0-9]|[1-2][0-9]|3[0-2])$ ]]; then
-          echo -e "${DGN}Using IP Address: ${BGN}$NET${CL}"
-          break
-        else
-          whiptail --backtitle "Salvialf PVE scripts" --msgbox "$NET is an invalid IPv4 CIDR address. Please enter a valid IPv4 CIDR address or 'dhcp'" 8 58
-        fi
-      fi
-    else
-      exit-script
-    fi
+    NET=$(wt --inputbox "Set a static IPv4 address, e.g. 192.168.1.50/24\nKeep dhcp for automatic addressing" dhcp --title "IPv4 ADDRESS") || exit-script
+    [[ "$NET" == "dhcp" || "$NET" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}/([0-9]|[1-2][0-9]|3[0-2])$ ]] && break
+    wt --title "IPv4 ADDRESS" --msgbox "Invalid IPv4 address: $NET\nUse the format 192.168.1.50/24, or dhcp"
   done
+  echo -e "${DGN}Using IP Address: ${BGN}$NET${CL}"
 
   if [ "$NET" != "dhcp" ]; then
     while true; do
-      GATE1=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Enter gateway IP address" 8 58 --title "Gateway IP" 3>&1 1>&2 2>&3)
-      if [ -z "$GATE1" ]; then
-        whiptail --backtitle "Salvialf PVE scripts" --msgbox "Gateway IP address cannot be empty" 8 58
-      elif [[ ! "$GATE1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
-        whiptail --backtitle "Salvialf PVE scripts" --msgbox "Invalid IP address format" 8 58
-      else
-        GATE=",gw=$GATE1"
-        echo -e "${DGN}Using Gateway IP Address: ${BGN}$GATE1${CL}"
-        break
-      fi
+      GATE1=$(wt --inputbox "Set the gateway IPv4 address, e.g. 192.168.1.1" --title "GATEWAY") || exit-script
+      [[ "$GATE1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] && break
+      wt --title "GATEWAY" --msgbox "Invalid gateway address: $GATE1\nUse the format 192.168.1.1"
     done
+    GATE=",gw=$GATE1"
   else
     GATE=""
-    echo -e "${DGN}Using Gateway IP Address: ${BGN}Default${CL}"
+    GATE1="Default"
   fi
+  echo -e "${DGN}Using Gateway IP Address: ${BGN}$GATE1${CL}"
 
   if [ "$var_os" == "alpine" ]; then
     APT_CACHER=""
     APT_CACHER_IP=""
   else
-    if APT_CACHER_IP=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Set APT-Cacher IP (leave blank for default)" 8 58 --title "APT-Cacher IP" 3>&1 1>&2 2>&3); then
-      APT_CACHER="${APT_CACHER_IP:+yes}"
-      echo -e "${DGN}Using APT-Cacher IP Address: ${BGN}${APT_CACHER_IP:-Default}${CL}"
-    else
-      exit-script
-    fi
+    APT_CACHER_IP=$(wt --inputbox "Set the APT-Cacher IP address\nLeave blank to not use one" --title "APT-CACHER") || exit-script
+    APT_CACHER="${APT_CACHER_IP:+yes}"
   fi
+  echo -e "${DGN}Using APT-Cacher IP Address: ${BGN}${APT_CACHER_IP:-Default}${CL}"
 
-  if (whiptail --backtitle "Salvialf PVE scripts" --defaultno --title "IPv6" --yesno "Disable IPv6?" 10 58); then
+  if wt --defaultno --title "IPv6" --yesno "Disable IPv6?"; then
     DISABLEIP6="yes"
   else
     DISABLEIP6="no"
   fi
   echo -e "${DGN}Disable IPv6: ${BGN}$DISABLEIP6${CL}"
 
-  if MTU1=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Set Interface MTU Size (leave blank for default)" 8 58 --title "MTU SIZE" 3>&1 1>&2 2>&3); then
-    if [ -z $MTU1 ]; then
-      MTU1="Default"
-      MTU=""
-    else
-      MTU=",mtu=$MTU1"
-    fi
-    echo -e "${DGN}Using Interface MTU Size: ${BGN}$MTU1${CL}"
+  MTU1=$(wt --inputbox "Set the interface MTU size\nLeave blank for default" --title "MTU") || exit-script
+  if [ -z $MTU1 ]; then
+    MTU1="Default"
+    MTU=""
   else
-    exit-script
+    MTU=",mtu=$MTU1"
   fi
+  echo -e "${DGN}Using Interface MTU Size: ${BGN}$MTU1${CL}"
 
-  if SD=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Set a DNS Search Domain (leave blank for HOST)" 8 58 --title "DNS Search Domain" 3>&1 1>&2 2>&3); then
-    if [ -z $SD ]; then
-      SX=Host
-      SD=""
-    else
-      SX=$SD
-      SD="-searchdomain=$SD"
-    fi
-    echo -e "${DGN}Using DNS Search Domain: ${BGN}$SX${CL}"
+  SD=$(wt --inputbox "Set the DNS search domain\nLeave blank to use the host's" --title "DNS SEARCH DOMAIN") || exit-script
+  if [ -z $SD ]; then
+    SX=Host
+    SD=""
   else
-    exit-script
+    SX=$SD
+    SD="-searchdomain=$SD"
   fi
+  echo -e "${DGN}Using DNS Search Domain: ${BGN}$SX${CL}"
 
-  if NX=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Set a DNS Server IP (leave blank for HOST)" 8 58 --title "DNS SERVER IP" 3>&1 1>&2 2>&3); then
-    if [ -z $NX ]; then
-      NX=Host
-      NS=""
-    else
-      NS="-nameserver=$NX"
-    fi
-    echo -e "${DGN}Using DNS Server IP Address: ${BGN}$NX${CL}"
+  NX=$(wt --inputbox "Set the DNS server IP address\nLeave blank to use the host's" --title "DNS SERVER") || exit-script
+  if [ -z $NX ]; then
+    NX=Host
+    NS=""
   else
-    exit-script
+    NS="-nameserver=$NX"
   fi
+  echo -e "${DGN}Using DNS Server IP Address: ${BGN}$NX${CL}"
 
-  if MAC1=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Set a MAC Address(leave blank for default)" 8 58 --title "MAC ADDRESS" 3>&1 1>&2 2>&3); then
-    if [ -z $MAC1 ]; then
-      MAC1="Default"
-      MAC=""
-    else
-      MAC=",hwaddr=$MAC1"
-      echo -e "${DGN}Using MAC Address: ${BGN}$MAC1${CL}"
-    fi
+  MAC1=$(wt --inputbox "Set the MAC address\nLeave blank for a generated one" --title "MAC ADDRESS") || exit-script
+  if [ -z $MAC1 ]; then
+    MAC1="Default"
+    MAC=""
   else
-    exit-script
+    MAC=",hwaddr=$MAC1"
   fi
+  echo -e "${DGN}Using MAC Address: ${BGN}$MAC1${CL}"
 
-  if VLAN1=$(whiptail --backtitle "Salvialf PVE scripts" --inputbox "Set a Vlan(leave blank for default)" 8 58 --title "VLAN" 3>&1 1>&2 2>&3); then
-    if [ -z $VLAN1 ]; then
-      VLAN1="Default"
-      VLAN=""
-    else
-      VLAN=",tag=$VLAN1"
-    fi
-    echo -e "${DGN}Using Vlan: ${BGN}$VLAN1${CL}"
+  VLAN1=$(wt --inputbox "Set the VLAN tag\nLeave blank for none" --title "VLAN") || exit-script
+  if [ -z $VLAN1 ]; then
+    VLAN1="Default"
+    VLAN=""
   else
-    exit-script
+    VLAN=",tag=$VLAN1"
   fi
+  echo -e "${DGN}Using Vlan: ${BGN}$VLAN1${CL}"
 
   if [[ "$PW" == -password* ]]; then
-    if (whiptail --backtitle "Salvialf PVE scripts" --defaultno --title "SSH ACCESS" --yesno "Enable Root SSH Access?" 10 58); then
+    if wt --defaultno --title "ROOT SSH ACCESS" --yesno "Enable root SSH access?"; then
       SSH="yes"
     else
       SSH="no"
     fi
-    echo -e "${DGN}Enable Root SSH Access: ${BGN}$SSH${CL}"
   else
     SSH="no"
-    echo -e "${DGN}Enable Root SSH Access: ${BGN}$SSH${CL}"
   fi
+  echo -e "${DGN}Enable Root SSH Access: ${BGN}$SSH${CL}"
 
-  if (whiptail --backtitle "Salvialf PVE scripts" --defaultno --title "VERBOSE MODE" --yesno "Enable Verbose Mode?" 10 58); then
+  if wt --defaultno --title "VERBOSE MODE" --yesno "Enable verbose mode?"; then
     VERB="yes"
   else
     VERB="no"
@@ -495,7 +401,7 @@ advanced_settings() {
     app_settings
   fi
 
-  if (whiptail --backtitle "Salvialf PVE scripts" --title "ADVANCED SETTINGS COMPLETE" --yesno "Ready to create ${APP} LXC?" 10 58); then
+  if wt --title "CONFIRMATION" --yesno "Ready to create the ${APP} LXC?"; then
     echo -e "${RD}Creating a ${APP} LXC using the above advanced settings${CL}"
   else
     clear
@@ -527,7 +433,7 @@ install_script() {
     timezone="UTC"
   fi
   header_info
-  if (whiptail --backtitle "Salvialf PVE scripts" --title "SETTINGS" --yesno "Use Default Settings?" --no-button Advanced 10 58); then
+  if wt --title "SETTINGS" --yesno "Use default settings?" --no-button Advanced; then
     header_info
     echo -e "${BL}Using Default Settings${CL}"
     default_settings
@@ -540,20 +446,10 @@ install_script() {
 
 start() {
   if command -v pveversion >/dev/null 2>&1; then
-    if ! (whiptail --backtitle "Salvialf PVE scripts" --title "${APP} LXC" --yesno "This will create a New ${APP} LXC. Proceed?" 10 58); then
-      clear
-      echo -e "⚠  User exited script \n"
-      exit
-    fi
+    wt --title "CREATE CONTAINER" --yesno "This will create a new ${APP} LXC. Proceed?" || exit-script
     install_script
-  fi
-
-  if ! command -v pveversion >/dev/null 2>&1; then
-    if ! (whiptail --backtitle "Salvialf PVE scripts" --title "${APP} LXC UPDATE" --yesno "Support/Update functions for ${APP} LXC.  Proceed?" 10 58); then
-      clear
-      echo -e "⚠  User exited script \n"
-      exit
-    fi
+  else
+    wt --title "UPDATE CONTAINER" --yesno "This will update the ${APP} LXC. Proceed?" || exit-script
     update_script
   fi
 }

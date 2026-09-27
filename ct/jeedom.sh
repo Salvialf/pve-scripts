@@ -65,12 +65,11 @@ function app_settings() {
     *) preselect=(--default-item "other"); other_preselect=(--default-item "$provided") ;;
   esac
 
-  JEEDOM_BRANCH=$(whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" "${preselect[@]}" --menu "Choose the Jeedom branch to install" 14 58 4 \
+  JEEDOM_BRANCH=$(wt --title "JEEDOM BRANCH" "${preselect[@]}" --menu "Choose the Jeedom branch to install" \
     "master" "Stable" \
     "release" "Pre-release" \
     "develop" "Development" \
-    "other" "Other branch" \
-    3>&1 1>&2 2>&3) || exit-script
+    "other" "Other branch") || exit-script
 
   if [ "$JEEDOM_BRANCH" == "other" ]; then
     # alpha, beta and V4-stable are obsolete but still on the repo
@@ -82,14 +81,13 @@ function app_settings() {
     done
 
     if [ ${#branches[@]} -gt 0 ]; then
-      JEEDOM_BRANCH=$(whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" "${other_preselect[@]}" --menu "Choose another branch (not supported)" 20 70 12 \
-        "${branches[@]}" \
-        3>&1 1>&2 2>&3) || exit-script
+      JEEDOM_BRANCH=$(wt --title "JEEDOM BRANCH" "${other_preselect[@]}" --menu "Choose another branch (not supported)" \
+        "${branches[@]}") || exit-script
     else
       while true; do
-        JEEDOM_BRANCH=$(whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" --inputbox "Branch list unavailable, enter the branch name" 8 58 3>&1 1>&2 2>&3) || exit-script
+        JEEDOM_BRANCH=$(wt --title "JEEDOM BRANCH" --inputbox "Set the branch name\nBranch list unavailable") || exit-script
         jeedom_branch_exists "$JEEDOM_BRANCH" && break
-        whiptail --backtitle "Salvialf PVE scripts" --title "JEEDOM BRANCH" --msgbox "Branch '${JEEDOM_BRANCH}' not found" 8 58
+        wt --title "JEEDOM BRANCH" --msgbox "Branch '${JEEDOM_BRANCH}' not found"
       done
     fi
   fi
