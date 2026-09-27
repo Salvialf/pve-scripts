@@ -204,9 +204,9 @@ exit-script() {
   exit
 }
 
-# This function colors whiptail after the app's logo: var_color_primary on the screen and accents, light or dark windows.
+# This function colors whiptail after the app's logo: var_color_primary on the banner and accents, light or dark windows.
 newt_colors() {
-  local primary="${var_color_primary:-}" surface text
+  local primary="${var_color_primary:-}" screen="color235" surface text
   # No app color, or under 256 colors (ssh often sets TERM=xterm): keep whiptail's own palette
   if [ -z "$primary" ] || [ "$(tput colors 2>/dev/null || echo 0)" -lt 256 ]; then
     return
@@ -219,7 +219,7 @@ newt_colors() {
     text="black"
   fi
   local elements=(
-    "root=$text,$primary" "roottext=$primary,$surface" "helpline=$text,$primary"
+    "root=white,$screen" "roottext=$primary,$surface" "helpline=white,$screen"
     "window=$text,$surface" "border=$primary,$surface" "title=$primary,$surface" "label=$text,$surface"
     "textbox=$text,$surface" "acttextbox=$surface,$primary"
     "button=$surface,$primary" "actbutton=$primary,$surface" "compactbutton=$text,$surface"
