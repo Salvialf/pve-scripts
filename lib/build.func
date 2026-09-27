@@ -219,7 +219,7 @@ newt_colors() {
     text="black"
   fi
   local elements=(
-    "root=$text,$primary" "roottext=$surface,$primary" "helpline=$text,$primary"
+    "root=$text,$primary" "roottext=$primary,$surface" "helpline=$text,$primary"
     "window=$text,$surface" "border=$primary,$surface" "title=$primary,$surface" "label=$text,$surface"
     "textbox=$text,$surface" "acttextbox=$surface,$primary"
     "button=$surface,$primary" "actbutton=$primary,$surface" "compactbutton=$text,$surface"
@@ -233,7 +233,7 @@ newt_colors() {
 # This function wraps whiptail: centered backtitle, sizes added after the box text, the answer is returned on stdout.
 # The box option must be directly followed by its text.
 wt() {
-  local args=() cols breaks msgbox="" rc=0
+  local args=() cols breaks backtitle msgbox="" rc=0
   while [ $# -gt 0 ]; do
     case "$1" in
       --inputbox | --yesno)
@@ -253,7 +253,9 @@ wt() {
   done
   # stdout is captured by the caller, ask the terminal directly
   read -r _ cols < <(stty size </dev/tty)
-  whiptail --backtitle "$(printf '%*s' $(((cols - ${#BACKTITLE}) / 2)) '')$BACKTITLE" "${args[@]}" 3>&1 1>&2 2>&3 || rc=$?
+  # Centered, then padded to the full width so newt_colors' roottext background makes a banner
+  backtitle="$(printf '%*s%s' $(((cols - ${#BACKTITLE}) / 2)) '' "$BACKTITLE")"
+  whiptail --backtitle "$(printf '%-*s' "$cols" "$backtitle")" "${args[@]}" 3>&1 1>&2 2>&3 || rc=$?
   # A msgbox has nothing to answer: ESC closes it like OK instead of failing under set -e
   [ -n "$msgbox" ] && rc=0
   return "$rc"
