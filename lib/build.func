@@ -172,6 +172,30 @@ echo_default() {
   echo -e "${DGN}Enable Verbose Mode: ${BGN}No${CL}"
 }
 
+# This function sets the default settings, the app-specific values come from the ct script's var_* variables.
+default_settings() {
+  CT_TYPE="1"
+  PW=""
+  CT_ID=$NEXTID
+  HN=$NSAPP
+  DISK_SIZE="$var_disk"
+  CORE_COUNT="$var_cpu"
+  RAM_SIZE="$var_ram"
+  NET="dhcp"
+  GATE=""
+  APT_CACHER=""
+  APT_CACHER_IP=""
+  DISABLEIP6="no"
+  MTU=""
+  SD=""
+  NS=""
+  MAC=""
+  VLAN=""
+  SSH="no"
+  VERB="no"
+  echo_default
+}
+
 # This function is called when the user decides to exit the script. It clears the screen and displays an exit message.
 exit-script() {
   clear
