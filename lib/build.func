@@ -319,8 +319,18 @@ advanced_settings() {
     wt --title "ROOT PASSWORD" --msgbox "Passwords do not match. Please try again."
   done
 
-  CT_ID=$(wt --inputbox "Set the container ID" "$NEXTID" --title "CONTAINER ID") || exit-script
-  CT_ID="${CT_ID:-$NEXTID}"
+  while true; do
+    CT_ID=$(wt --inputbox "Set the container ID" "$NEXTID" --title "CONTAINER ID") || exit-script
+    CT_ID="${CT_ID:-$NEXTID}"
+    if ! [[ "$CT_ID" =~ ^[0-9]+$ ]] || [ "$CT_ID" -lt 100 ]; then
+      wt --title "CONTAINER ID" --msgbox "Invalid container ID: $CT_ID\nUse a number, 100 or more"
+    # Checks every VM and container of the cluster, pct status only knows containers
+    elif ! pvesh get /cluster/nextid --vmid "$CT_ID" &>/dev/null; then
+      wt --title "CONTAINER ID" --msgbox "Container ID $CT_ID is already in use\nby a VM or a container"
+    else
+      break
+    fi
+  done
   echo -e "${DGN}Using Container ID: ${BGN}$CT_ID${CL}"
 
   CT_NAME=$(wt --inputbox "Set the hostname" "$NSAPP" --title "HOSTNAME") || exit-script
@@ -513,19 +523,9 @@ start() {
   fi
 }
 
-# This function checks the container ID, downloads the template if needed and creates the container.
+# This function downloads the template if needed and creates the container.
 create_container() {
   local template_search templates template
-
-  if ! [[ "$CTID" =~ ^[0-9]+$ ]] || [ "$CTID" -lt 100 ]; then
-    msg_error "Container ID must be a number, 100 or more."
-    exit 1
-  fi
-  if pct status "$CTID" &>/dev/null; then
-    msg_error "Container ID '$CTID' is already in use."
-    exit 1
-  fi
-
   msg_info "Updating LXC Template List"
   pveam update >/dev/null
   msg_ok "Updated LXC Template List"
