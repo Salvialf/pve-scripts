@@ -17,7 +17,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/mai
 | OS | Debian 12 |
 | CPU | 1 vCPU |
 | RAM | 512 MiB |
-| Disk | 4 GB |
+| Disk | 4 GiB |
 | Network | DHCP on `vmbr0` |
 | Container | Unprivileged, root autologin on the console |
 

@@ -19,7 +19,7 @@ At the end, the script shows the URL of the Jeedom interface. The default login 
 | OS | Debian 12 |
 | CPU | 2 vCPU |
 | RAM | 2048 MiB |
-| Disk | 16 GB |
+| Disk | 16 GiB |
 | Network | DHCP on `vmbr0` |
 | Container | Unprivileged, root autologin on the console |
 | Jeedom branch | `master` |
