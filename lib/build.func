@@ -279,8 +279,8 @@ storage_settings() {
 # This function sets the network bridge, asking only when the host has several.
 bridge_settings() {
   local names=() types=() menu=() entry preselect i
-  # any_bridge: Linux and OVS bridges plus SDN vnets. Nothing here may fail,
-  # under set -E the error handler's message would be read as a bridge
+  # any_bridge: Linux/OVS bridges and SDN vnets
+  # || true: with set -E, an error here would be read as a bridge
   while read -r entry; do
     names+=("$(sed -n 's/.*"iface":"\([^"]*\)".*/\1/p' <<< "$entry")")
     types+=("$(sed -n 's/.*"type":"\([^"]*\)".*/\1/p' <<< "$entry")")
@@ -583,12 +583,13 @@ create_container() {
 
   template_search="${var_os}-${var_version}"
   # Keep only the host's architecture (PVE 9 also lists arm64 templates)
+  # || true: with set -E, an error here would be read as a template
   mapfile -t templates < <(
     pveam available -section system |
       awk '{print $2}' |
       grep "_$(dpkg --print-architecture)\.tar\." |
       sed -n "s/.*\($template_search.*\)/\1/p" |
-      sort -t - -k 2 -V
+      sort -t - -k 2 -V || true
   )
   if [ ${#templates[@]} -eq 0 ]; then
     msg_error "Unable to find a template when searching for '$template_search'."
