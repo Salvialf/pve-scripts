@@ -219,7 +219,7 @@ newt_colors() {
     text="black"
   fi
   local elements=(
-    "root=white,$screen" "roottext=$primary,$surface" "helpline=white,$screen"
+    "root=white,$screen" "roottext=$primary,$surface" "helpline=white,$screen" "shadow=white,$screen"
     "window=$text,$surface" "border=$primary,$surface" "title=$primary,$surface" "label=$text,$surface"
     "textbox=$text,$surface" "acttextbox=$surface,$primary"
     "button=$surface,$primary" "actbutton=$primary,$surface" "compactbutton=$text,$surface"
