@@ -4,6 +4,7 @@ variables() {
   NSAPP=$(echo ${APP,,} | tr -d ' ') # This function sets the NSAPP variable by converting the value of the APP variable to lowercase and removing any spaces.
   SPINNER_PID=""                     # read by msg_* and error_handler, which can run before start()
   BACKTITLE="Salvialf PVE scripts - ${APP} LXC" # shown on every whiptail window
+  newt_colors                                   # whiptail palette from the ct script's var_color_*
 }
 
 # This function sets various color variables using ANSI escape codes for formatting text in the terminal.
@@ -201,6 +202,32 @@ exit-script() {
   clear
   echo -e "⚠  User exited script \n"
   exit
+}
+
+# This function colors whiptail after the app's logo: var_color_primary on the screen and accents, light or dark windows.
+newt_colors() {
+  local primary="${var_color_primary:-}" surface text
+  # No app color, or under 256 colors (ssh often sets TERM=xterm): keep whiptail's own palette
+  if [ -z "$primary" ] || [ "$(tput colors 2>/dev/null || echo 0)" -lt 256 ]; then
+    return
+  fi
+  if [ "${var_color_theme:-light}" == "dark" ]; then
+    surface="color238"
+    text="white"
+  else
+    surface="lightgray"
+    text="black"
+  fi
+  local elements=(
+    "root=$text,$primary" "roottext=$surface,$primary" "helpline=$text,$primary"
+    "window=$text,$surface" "border=$primary,$surface" "title=$primary,$surface" "label=$text,$surface"
+    "textbox=$text,$surface" "acttextbox=$surface,$primary"
+    "button=$surface,$primary" "actbutton=$primary,$surface" "compactbutton=$text,$surface"
+    "checkbox=$text,$surface" "actcheckbox=$surface,$primary"
+    "listbox=$text,$surface" "actlistbox=$surface,$primary" "sellistbox=$primary,$surface" "actsellistbox=$surface,$primary"
+    "entry=$surface,$primary" "disentry=$surface,$primary"
+  )
+  export NEWT_COLORS="${elements[*]}"
 }
 
 # This function wraps whiptail: centered backtitle, sizes added after the box text, the answer is returned on stdout.

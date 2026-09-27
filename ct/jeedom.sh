@@ -27,6 +27,8 @@ var_ram="2048"
 var_os="debian"
 var_os_locked="yes"
 var_version="12"
+var_color_primary="color106"
+var_color_theme="dark"
 variables
 color
 catch_errors
