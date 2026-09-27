@@ -215,25 +215,20 @@ wt_status() {
   [ "$1" == "$2" ] && echo ON || echo OFF
 }
 
-# This function prints the free space of a storage in KiB, as reported by pvesm.
-storage_free_kib() {
-  pvesm status | awk -v storage="$1" '$1 == storage {print $6}'
-}
-
 # This function converts a size in KiB (pvesm's unit) to GiB with 2 decimals.
 kib_to_gib() {
   awk -v kib="$1" 'BEGIN {printf "%.2f", kib / 1048576}'
 }
 
-# This function prints the storage to use for a content type, asking only when several are available.
-# Arguments: content type (vztmpl or rootdir), window title, window text, storage to preselect (the first one if empty).
+# This function prints the storage to use, asking only when several are available.
+# Arguments: pvesm status lines without header, window title, window text, storage to preselect (the first one if empty).
 select_storage() {
   local names=() descs=() menu=() name type free i
   # pvesm columns: Name Type Status Total Used Available %, sizes in KiB
   while read -r name type _ _ _ free _; do
     names+=("$name")
     descs+=("$(printf '%-10s %s GiB free' "$type" "$(kib_to_gib "$free")")")
-  done < <(pvesm status -content "$1" | awk 'NR>1')
+  done <<< "$1"
   if [ ${#names[@]} -eq 1 ]; then
     echo "${names[0]}"
     return
@@ -244,28 +239,31 @@ select_storage() {
   wt --title "$2" --radiolist "$3" "${menu[@]}"
 }
 
-# This function sets the template and container storages.
+# This function sets the template and container storages, and the container storage's free space in KiB.
 storage_settings() {
-  if [ -z "$(pvesm status -content vztmpl | awk 'NR>1')" ]; then
+  local templates containers
+  # pvesm is slow to start, one call per content type. An error leaves the list empty, reported below
+  templates=$(pvesm status -content vztmpl | awk 'NR>1') || true
+  containers=$(pvesm status -content rootdir | awk 'NR>1') || true
+  if [ -z "$templates" ]; then
     msg_error "Unable to detect a valid Template Storage location."
     exit 1
   fi
-  if [ -z "$(pvesm status -content rootdir | awk 'NR>1')" ]; then
+  if [ -z "$containers" ]; then
     msg_error "Unable to detect a valid Container Storage location."
     exit 1
   fi
-  TEMPLATE_STORAGE=$(select_storage vztmpl "TEMPLATE STORAGE" "Choose the storage for the container template" "${TEMPLATE_STORAGE:-}") || exit-script
+  TEMPLATE_STORAGE=$(select_storage "$templates" "TEMPLATE STORAGE" "Choose the storage for the container template" "${TEMPLATE_STORAGE:-}") || exit-script
   echo -e "${DGN}Using Template Storage: ${BGN}$TEMPLATE_STORAGE${CL}"
-  CONTAINER_STORAGE=$(select_storage rootdir "CONTAINER STORAGE" "Choose the storage for the container disk" "${CONTAINER_STORAGE:-}") || exit-script
+  CONTAINER_STORAGE=$(select_storage "$containers" "CONTAINER STORAGE" "Choose the storage for the container disk" "${CONTAINER_STORAGE:-}") || exit-script
+  CONTAINER_STORAGE_FREE=$(awk -v storage="$CONTAINER_STORAGE" '$1 == storage {print $6}' <<< "$containers")
   echo -e "${DGN}Using Container Storage: ${BGN}$CONTAINER_STORAGE${CL}"
 }
 
 # This function warns when the disk doesn't fit in the container storage's free space, it fails if the user doesn't go on.
 disk_space_check() {
-  local free
-  free=$(storage_free_kib "$CONTAINER_STORAGE")
-  awk -v size="$DISK_SIZE" -v kib="$free" 'BEGIN {exit !(size * 1048576 <= kib)}' && return 0
-  wt --defaultno --title "DISK SPACE" --yesno "Disk size: $DISK_SIZE GiB\nFree on $CONTAINER_STORAGE: $(kib_to_gib "$free") GiB\nContinue anyway?"
+  awk -v size="$DISK_SIZE" -v kib="$CONTAINER_STORAGE_FREE" 'BEGIN {exit !(size * 1048576 <= kib)}' && return 0
+  wt --defaultno --title "DISK SPACE" --yesno "Disk size: $DISK_SIZE GiB\nFree on $CONTAINER_STORAGE: $(kib_to_gib "$CONTAINER_STORAGE_FREE") GiB\nContinue anyway?"
 }
 
 # This function allows the user to configure advanced settings for the script.
@@ -340,7 +338,7 @@ advanced_settings() {
   storage_settings
 
   while true; do
-    DISK_SIZE=$(wt --inputbox "Set the disk size in GiB\n$(kib_to_gib "$(storage_free_kib "$CONTAINER_STORAGE")") GiB free on $CONTAINER_STORAGE" "$var_disk" --title "DISK SIZE") || exit-script
+    DISK_SIZE=$(wt --inputbox "Set the disk size in GiB\n$(kib_to_gib "$CONTAINER_STORAGE_FREE") GiB free on $CONTAINER_STORAGE" "$var_disk" --title "DISK SIZE") || exit-script
     DISK_SIZE="${DISK_SIZE:-$var_disk}"
     if ! [[ "$DISK_SIZE" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
       wt --title "DISK SIZE" --msgbox "Invalid disk size: $DISK_SIZE\nUse a number of GiB, e.g. 16"
@@ -571,7 +569,6 @@ build_container() {
   else
     FEATURES="nesting=1"
   fi
-
 
   TEMP_DIR=$(mktemp -d)
   pushd $TEMP_DIR >/dev/null
