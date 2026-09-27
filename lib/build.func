@@ -217,6 +217,41 @@ wt_status() {
   [ "$1" == "$2" ] && echo ON || echo OFF
 }
 
+# This function prints the storage to use for a content type, asking only when several are available.
+# Arguments: content type (vztmpl or rootdir), window title, window text, storage to preselect (the first one if empty).
+select_storage() {
+  local names=() descs=() menu=() name type free i
+  # pvesm columns: Name Type Status Total Used Available %, sizes in KiB
+  while read -r name type _ _ _ free _; do
+    names+=("$name")
+    descs+=("$(printf '%-10s %s free' "$type" "$(numfmt --from-unit=1024 --to=iec-i --suffix=B --format %.2f "$free")")")
+  done < <(pvesm status -content "$1" | awk 'NR>1')
+  if [ ${#names[@]} -eq 1 ]; then
+    echo "${names[0]}"
+    return
+  fi
+  for i in "${!names[@]}"; do
+    menu+=("${names[i]}" "${descs[i]}" "$(wt_status "${names[i]}" "${4:-${names[0]}}")")
+  done
+  wt --title "$2" --radiolist "$3" "${menu[@]}"
+}
+
+# This function sets the template and container storages.
+storage_settings() {
+  if [ -z "$(pvesm status -content vztmpl | awk 'NR>1')" ]; then
+    msg_error "Unable to detect a valid Template Storage location."
+    exit 1
+  fi
+  if [ -z "$(pvesm status -content rootdir | awk 'NR>1')" ]; then
+    msg_error "Unable to detect a valid Container Storage location."
+    exit 1
+  fi
+  TEMPLATE_STORAGE=$(select_storage vztmpl "TEMPLATE STORAGE" "Choose the storage for the container template" "${TEMPLATE_STORAGE:-}") || exit-script
+  echo -e "${DGN}Using Template Storage: ${BGN}$TEMPLATE_STORAGE${CL}"
+  CONTAINER_STORAGE=$(select_storage rootdir "CONTAINER STORAGE" "Choose the storage for the container disk" "${CONTAINER_STORAGE:-}") || exit-script
+  echo -e "${DGN}Using Container Storage: ${BGN}$CONTAINER_STORAGE${CL}"
+}
+
 # This function allows the user to configure advanced settings for the script.
 advanced_settings() {
   if [ "$var_os" != "alpine" ] && [ "${var_os_locked:-no}" != "yes" ]; then
@@ -275,6 +310,8 @@ advanced_settings() {
   HN=$(echo ${CT_NAME,,} | tr -d ' ')
   HN="${HN:-$NSAPP}"
   echo -e "${DGN}Using Hostname: ${BGN}$HN${CL}"
+
+  storage_settings
 
   DISK_SIZE=$(wt --inputbox "Set the disk size in GiB" "$var_disk" --title "DISK SIZE") || exit-script
   DISK_SIZE="${DISK_SIZE:-$var_disk}"
@@ -437,6 +474,7 @@ install_script() {
     header_info
     echo -e "${BL}Using Default Settings${CL}"
     default_settings
+    storage_settings
   else
     header_info
     echo -e "${RD}Using Advanced Settings${CL}"
@@ -454,66 +492,9 @@ start() {
   fi
 }
 
-# This function is used to select the storage class and determine the corresponding storage content type and label.
-select_storage() {
-  local CLASS=$1
-  local CONTENT
-  local CONTENT_LABEL
-  case $CLASS in
-  container)
-    CONTENT='rootdir'
-    CONTENT_LABEL='Container'
-    ;;
-  template)
-    CONTENT='vztmpl'
-    CONTENT_LABEL='Container template'
-    ;;
-  *) return 1 ;;
-  esac
-
-  # This Queries all storage locations
-  local -a MENU
-  while read -r line; do
-    local TAG=$(echo $line | awk '{print $1}')
-    local TYPE=$(echo $line | awk '{printf "%-10s", $2}')
-    local FREE=$(echo $line | numfmt --field 4-6 --from-unit=K --to=iec --format %.2f | awk '{printf( "%9sB", $6)}')
-    local ITEM="  Type: $TYPE Free: $FREE "
-    local OFFSET=2
-    if [[ $((${#ITEM} + $OFFSET)) -gt ${MSG_MAX_LENGTH:-} ]]; then
-      local MSG_MAX_LENGTH=$((${#ITEM} + $OFFSET))
-    fi
-    MENU+=("$TAG" "$ITEM" "OFF")
-  done < <(pvesm status -content $CONTENT | awk 'NR>1')
-
-  # Select storage location
-  if [ $((${#MENU[@]}/3)) -eq 1 ]; then
-    printf ${MENU[0]}
-  else
-    local STORAGE
-    while [ -z "${STORAGE:+x}" ]; do
-      STORAGE=$(whiptail --backtitle "Salvialf PVE scripts" --title "Storage Pools" --radiolist \
-      "Which storage pool you would like to use for the ${CONTENT_LABEL,,}?\nTo make a selection, use the Spacebar.\n" \
-      16 $(($MSG_MAX_LENGTH + 23)) 6 \
-      "${MENU[@]}" 3>&1 1>&2 2>&3) || return 1
-    done
-    printf $STORAGE
-  fi
-}
-
-# This function checks the storages and the container ID, downloads the template if needed and creates the container.
+# This function checks the container ID, downloads the template if needed and creates the container.
 create_container() {
   local template_search templates template
-
-  msg_info "Validating Storage"
-  if [ -z "$(pvesm status -content rootdir | awk 'NR>1')" ]; then
-    msg_error "Unable to detect a valid Container Storage location."
-    exit 1
-  fi
-  if [ -z "$(pvesm status -content vztmpl | awk 'NR>1')" ]; then
-    msg_error "Unable to detect a valid Template Storage location."
-    exit 1
-  fi
-  msg_ok "Validated Storage"
 
   if ! [[ "$CTID" =~ ^[0-9]+$ ]] || [ "$CTID" -lt 100 ]; then
     msg_error "Container ID must be a number, 100 or more."
@@ -523,11 +504,6 @@ create_container() {
     msg_error "Container ID '$CTID' is already in use."
     exit 1
   fi
-
-  TEMPLATE_STORAGE=$(select_storage template) || exit-script
-  msg_ok "Using ${BL}$TEMPLATE_STORAGE${CL} ${GN}for Template Storage."
-  CONTAINER_STORAGE=$(select_storage container) || exit-script
-  msg_ok "Using ${BL}$CONTAINER_STORAGE${CL} ${GN}for Container Storage."
 
   msg_info "Updating LXC Template List"
   pveam update >/dev/null
