@@ -3,7 +3,6 @@
 variables() {
   NSAPP=$(echo ${APP,,} | tr -d ' ') # This function sets the NSAPP variable by converting the value of the APP variable to lowercase and removing any spaces.
   var_install="${NSAPP}-install"     # sets the var_install variable by appending "-install" to the value of NSAPP.
-  INTEGER='^[0-9]+([.][0-9]+)?$'     # it defines the INTEGER regular expression pattern.
   SPINNER_PID=""                     # read by msg_* and error_handler, which can run before start()
   BACKTITLE="Salvialf PVE scripts - ${APP} LXC" # shown on every whiptail window
 }
@@ -217,6 +216,16 @@ wt_status() {
   [ "$1" == "$2" ] && echo ON || echo OFF
 }
 
+# This function prints the free space of a storage in KiB, as reported by pvesm.
+storage_free_kib() {
+  pvesm status | awk -v storage="$1" '$1 == storage {print $6}'
+}
+
+# This function converts a size in KiB (pvesm's unit) to GiB with 2 decimals.
+kib_to_gib() {
+  awk -v kib="$1" 'BEGIN {printf "%.2f", kib / 1048576}'
+}
+
 # This function prints the storage to use for a content type, asking only when several are available.
 # Arguments: content type (vztmpl or rootdir), window title, window text, storage to preselect (the first one if empty).
 select_storage() {
@@ -224,7 +233,7 @@ select_storage() {
   # pvesm columns: Name Type Status Total Used Available %, sizes in KiB
   while read -r name type _ _ _ free _; do
     names+=("$name")
-    descs+=("$(printf '%-10s %s free' "$type" "$(numfmt --from-unit=1024 --to=iec-i --suffix=B --format %.2f "$free")")")
+    descs+=("$(printf '%-10s %s GiB free' "$type" "$(kib_to_gib "$free")")")
   done < <(pvesm status -content "$1" | awk 'NR>1')
   if [ ${#names[@]} -eq 1 ]; then
     echo "${names[0]}"
@@ -250,6 +259,14 @@ storage_settings() {
   echo -e "${DGN}Using Template Storage: ${BGN}$TEMPLATE_STORAGE${CL}"
   CONTAINER_STORAGE=$(select_storage rootdir "CONTAINER STORAGE" "Choose the storage for the container disk" "${CONTAINER_STORAGE:-}") || exit-script
   echo -e "${DGN}Using Container Storage: ${BGN}$CONTAINER_STORAGE${CL}"
+}
+
+# This function warns when the disk doesn't fit in the container storage's free space, it fails if the user doesn't go on.
+disk_space_check() {
+  local free
+  free=$(storage_free_kib "$CONTAINER_STORAGE")
+  awk -v size="$DISK_SIZE" -v kib="$free" 'BEGIN {exit !(size * 1048576 <= kib)}' && return 0
+  wt --defaultno --title "DISK SPACE" --yesno "Disk size: $DISK_SIZE GiB\nFree on $CONTAINER_STORAGE: $(kib_to_gib "$free") GiB\nContinue anyway?"
 }
 
 # This function allows the user to configure advanced settings for the script.
@@ -313,12 +330,15 @@ advanced_settings() {
 
   storage_settings
 
-  DISK_SIZE=$(wt --inputbox "Set the disk size in GiB" "$var_disk" --title "DISK SIZE") || exit-script
-  DISK_SIZE="${DISK_SIZE:-$var_disk}"
-  if ! [[ $DISK_SIZE =~ $INTEGER ]]; then
-    echo -e "${RD}⚠ DISK SIZE MUST BE AN INTEGER NUMBER!${CL}"
-    advanced_settings
-  fi
+  while true; do
+    DISK_SIZE=$(wt --inputbox "Set the disk size in GiB\n$(kib_to_gib "$(storage_free_kib "$CONTAINER_STORAGE")") GiB free on $CONTAINER_STORAGE" "$var_disk" --title "DISK SIZE") || exit-script
+    DISK_SIZE="${DISK_SIZE:-$var_disk}"
+    if ! [[ "$DISK_SIZE" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+      wt --title "DISK SIZE" --msgbox "Invalid disk size: $DISK_SIZE\nUse a number of GiB, e.g. 16"
+      continue
+    fi
+    disk_space_check && break
+  done
   echo -e "${DGN}Using Disk Size: ${BGN}$DISK_SIZE GiB${CL}"
 
   CORE_COUNT=$(wt --inputbox "Set the number of CPU cores" "$var_cpu" --title "CPU CORES") || exit-script
@@ -475,6 +495,7 @@ install_script() {
     echo -e "${BL}Using Default Settings${CL}"
     default_settings
     storage_settings
+    disk_space_check || exit-script
   else
     header_info
     echo -e "${RD}Using Advanced Settings${CL}"
