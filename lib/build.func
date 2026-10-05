@@ -126,7 +126,7 @@ arch_check() {
   fi
 }
 
-# This function checks if the script is running through a genuinely external SSH session and warns (without blocking), since on PVE 9.x the Proxmox WebUI Shell also sets SSH_CLIENT, with a local client IP.
+# Warns (without blocking) on a genuinely external SSH session: on PVE 9.x the Proxmox WebUI Shell also sets SSH_CLIENT, with a local client IP
 ssh_check() {
   if command -v pveversion >/dev/null 2>&1 && [ -n "${SSH_CLIENT:+x}" ]; then
     local client_ip host_ip host_subnet client_subnet
@@ -149,32 +149,13 @@ ssh_check() {
   fi
 }
 
-# This function displays the default values for various settings.
-echo_default() {
-  echo -e "${DGN}Using Distribution: ${BGN}$var_os${CL}"
-  echo -e "${DGN}Using $var_os Version: ${BGN}$var_version${CL}"
-  echo -e "${DGN}Using Container Type: ${BGN}$CT_TYPE${CL}"
-  echo -e "${DGN}Using Root Password: ${BGN}Automatic Login${CL}"
-  echo -e "${DGN}Using Container ID: ${BGN}$NEXTID${CL}"
-  echo -e "${DGN}Using Hostname: ${BGN}$NSAPP${CL}"
-  echo -e "${DGN}Using Disk Size: ${BGN}$var_disk GiB${CL}"
-  echo -e "${DGN}Using CPU Cores: ${BGN}$var_cpu${CL}"
-  echo -e "${DGN}Using RAM Size: ${BGN}$var_ram MiB${CL}"
-  echo -e "${DGN}Using Static IP Address: ${BGN}dhcp${CL}"
-  echo -e "${DGN}Using Gateway IP Address: ${BGN}Default${CL}"
-  echo -e "${DGN}Using Apt-Cacher IP Address: ${BGN}Default${CL}"
-  echo -e "${DGN}Disable IPv6: ${BGN}No${CL}"
-  echo -e "${DGN}Using Interface MTU Size: ${BGN}Default${CL}"
-  echo -e "${DGN}Using DNS Search Domain: ${BGN}Host${CL}"
-  echo -e "${DGN}Using DNS Server Address: ${BGN}Host${CL}"
-  echo -e "${DGN}Using MAC Address: ${BGN}Default${CL}"
-  echo -e "${DGN}Using VLAN Tag: ${BGN}Default${CL}"
-  echo -e "${DGN}Enable Root SSH Access: ${BGN}No${CL}"
-  echo -e "${DGN}Enable Verbose Mode: ${BGN}No${CL}"
-}
-
-# This function sets the default settings, the app-specific values come from the ct script's var_* variables.
+# Disk, CPU, RAM and OS come from the ct script's var_* variables
 default_settings() {
+  # Reset to the ct script's values, which the advanced steps change
+  DEFAULT_OS="${DEFAULT_OS:-$var_os}"
+  DEFAULT_VERSION="${DEFAULT_VERSION:-$var_version}"
+  var_os="$DEFAULT_OS"
+  var_version="$DEFAULT_VERSION"
   CT_TYPE="1"
   PW=""
   CT_ID=$NEXTID
@@ -184,17 +165,26 @@ default_settings() {
   RAM_SIZE="$var_ram"
   NET="dhcp"
   GATE=""
+  GATE1=""
   APT_CACHER=""
   APT_CACHER_IP=""
   DISABLEIP6="no"
   MTU=""
+  MTU1=""
   SD=""
+  SX=""
   NS=""
+  NX=""
   MAC=""
+  MAC1=""
   VLAN=""
+  VLAN1=""
   SSH="no"
   VERB="no"
-  echo_default
+  # The ct script's app_settings values, if any
+  if declare -F app_default_settings >/dev/null; then
+    app_default_settings
+  fi
 }
 
 # This function is called when the user decides to exit the script. It clears the screen and displays an exit message.
@@ -204,7 +194,7 @@ exit-script() {
   exit
 }
 
-# This function colors whiptail after the app's logo: var_color_primary on the banner and accents, light or dark windows.
+# Colors whiptail after the app's logo: var_color_primary on the banner and accents, light or dark windows
 newt_colors() {
   local primary="${var_color_primary:-}" screen="color235" surface text
   # No app color, or under 256 colors (ssh often sets TERM=xterm): keep whiptail's own palette
@@ -230,22 +220,22 @@ newt_colors() {
   export NEWT_COLORS="${elements[*]}"
 }
 
-# This function wraps whiptail: centered backtitle, sizes added after the box text, the answer is returned on stdout.
-# The box option must be directly followed by its text.
+# Wraps whiptail: centered backtitle, sizes added after the box text, the answer is returned on stdout
+# The box option must be directly followed by its text
 wt() {
-  local args=() cols breaks backtitle msgbox="" rc=0
+  local args=() nav=() cols breaks backtitle box="" rc=0
   while [ $# -gt 0 ]; do
     case "$1" in
-      --inputbox | --yesno)
-        args+=("$1" "$2" 0 58); shift 2 ;;
-      --msgbox)
-        msgbox="yes"
+      --inputbox | --yesno | --msgbox)
+        box="$1"
         args+=("$1" "$2" 0 58); shift 2 ;;
       --passwordbox)
+        box="$1"
         # newt's auto-size has no case for passwordbox and hides the text: 8 rows for one line, plus one per \n
         breaks="${2//\\n/}"
         args+=("$1" "$2" $(((${#2} - ${#breaks}) / 2 + 8)) 58); shift 2 ;;
       --menu | --radiolist | --checklist)
+        box="$1"
         args+=("$1" "$2" 0 58 0); shift 2 ;;
       *)
         args+=("$1"); shift ;;
@@ -255,42 +245,44 @@ wt() {
   read -r _ cols < <(stty size </dev/tty)
   # Centered, then padded to the full width so newt_colors' roottext background makes a banner
   backtitle="$(printf '%*s%s' $(((cols - ${#BACKTITLE}) / 2)) '' "$BACKTITLE")"
-  whiptail --backtitle "$(printf '%-*s' "$cols" "$backtitle")" "${args[@]}" 3>&1 1>&2 2>&3 || rc=$?
+  # Set by run_steps: Next/Back buttons, except on messages and questions
+  if [ -n "${WT_NAV:-}" ] && [ "$box" != "--msgbox" ] && [ "$box" != "--yesno" ]; then
+    nav=(--ok-button Next --cancel-button Back)
+  fi
+  whiptail --backtitle "$(printf '%-*s' "$cols" "$backtitle")" "${nav[@]}" "${args[@]}" 3>&1 1>&2 2>&3 || rc=$?
   # A msgbox has nothing to answer: ESC closes it like OK instead of failing under set -e
-  [ -n "$msgbox" ] && rc=0
+  [ "$box" == "--msgbox" ] && rc=0
   return "$rc"
 }
 
-# This function prints the radiolist status of an item: ON when it matches the value to preselect.
+# ON when the item matches the value to preselect
 wt_status() {
   [ "$1" == "$2" ] && echo ON || echo OFF
 }
 
-# This function succeeds when $3 is a whole number between $1 and $2 (9 digits at most, so test can compare it).
+# Succeeds when $3 is a whole number between $1 and $2 (9 digits at most, so test can compare it)
 is_number_in() {
   [[ "$3" =~ ^[0-9]{1,9}$ ]] && [ "$3" -ge "$1" ] && [ "$3" -le "$2" ]
 }
 
-# This function succeeds when $1 is an IPv4 address, each part from 0 to 255.
 is_ipv4() {
   local octet='(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])'
   [[ "$1" =~ ^($octet\.){3}$octet$ ]]
 }
 
-# This function succeeds when $1 is a DNS name as Proxmox requires it for hostnames: dot-separated labels
-# of letters, digits and inner hyphens, 255 characters at most.
+# Proxmox's hostname rule: dot-separated labels of letters, digits and inner hyphens, 255 characters at most
 is_dns_name() {
   local label='[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?'
   [ ${#1} -le 255 ] && [[ "$1" =~ ^($label\.)*$label$ ]]
 }
 
-# This function converts a size in KiB (pvesm's unit) to GiB with 2 decimals.
+# pvesm sizes are in KiB
 kib_to_gib() {
   awk -v kib="$1" 'BEGIN {printf "%.2f", kib / 1048576}'
 }
 
-# This function prints the storage to use, asking only when several are available.
-# Arguments: pvesm status lines without header, window title, window text, storage to preselect (the first one if empty).
+# Prints the storage to use, asking only when there are several
+# Arguments: pvesm status lines without header, window title, window text, storage to preselect (the first one if empty)
 select_storage() {
   local names=() descs=() menu=() name type free i
   # pvesm columns: Name Type Status Total Used Available %, sizes in KiB
@@ -308,279 +300,418 @@ select_storage() {
   wt --title "$2" --radiolist "$3" "${menu[@]}"
 }
 
-# This function sets the template and container storages, and the container storage's free space in KiB.
-storage_settings() {
-  local templates containers
+# Reads the host's storages and bridges once, before any window: a missing one stops the script here
+host_lists() {
+  local entry
   # pvesm is slow to start, one call per content type. An error leaves the list empty, reported below
-  templates=$(pvesm status -content vztmpl | awk 'NR>1') || true
-  containers=$(pvesm status -content rootdir | awk 'NR>1') || true
-  if [ -z "$templates" ]; then
+  TEMPLATE_STORAGE_LIST=$(pvesm status -content vztmpl | awk 'NR>1') || true
+  CONTAINER_STORAGE_LIST=$(pvesm status -content rootdir | awk 'NR>1') || true
+  if [ -z "$TEMPLATE_STORAGE_LIST" ]; then
     msg_error "Unable to detect a valid Template Storage location."
     exit 1
   fi
-  if [ -z "$containers" ]; then
+  if [ -z "$CONTAINER_STORAGE_LIST" ]; then
     msg_error "Unable to detect a valid Container Storage location."
     exit 1
   fi
-  TEMPLATE_STORAGE=$(select_storage "$templates" "TEMPLATE STORAGE" "Choose the storage for the container template" "${TEMPLATE_STORAGE:-}") || exit-script
-  echo -e "${DGN}Using Template Storage: ${BGN}$TEMPLATE_STORAGE${CL}"
-  CONTAINER_STORAGE=$(select_storage "$containers" "CONTAINER STORAGE" "Choose the storage for the container disk" "${CONTAINER_STORAGE:-}") || exit-script
-  CONTAINER_STORAGE_FREE=$(awk -v storage="$CONTAINER_STORAGE" '$1 == storage {print $6}' <<< "$containers")
-  echo -e "${DGN}Using Container Storage: ${BGN}$CONTAINER_STORAGE${CL}"
-}
-
-# This function sets the network bridge, asking only when the host has several.
-bridge_settings() {
-  local names=() types=() menu=() entry preselect i
+  BRIDGE_NAMES=()
+  BRIDGE_TYPES=()
   # any_bridge: Linux/OVS bridges and SDN vnets
   # || true: with set -E, an error here would be read as a bridge
   while read -r entry; do
-    names+=("$(sed -n 's/.*"iface":"\([^"]*\)".*/\1/p' <<< "$entry")")
-    types+=("$(sed -n 's/.*"type":"\([^"]*\)".*/\1/p' <<< "$entry")")
+    BRIDGE_NAMES+=("$(sed -n 's/.*"iface":"\([^"]*\)".*/\1/p' <<< "$entry")")
+    BRIDGE_TYPES+=("$(sed -n 's/.*"type":"\([^"]*\)".*/\1/p' <<< "$entry")")
   done < <(pvesh get "/nodes/$(hostname -s)/network" --type any_bridge --output-format json | grep -o '{[^}]*}' || true)
-  if [ ${#names[@]} -eq 0 ]; then
+  if [ ${#BRIDGE_NAMES[@]} -eq 0 ]; then
     msg_error "Unable to detect a network bridge on this host."
     exit 1
   fi
-  if [ ${#names[@]} -eq 1 ]; then
-    BRG="${names[0]}"
-  else
-    preselect="${names[0]}"
-    for i in "${!names[@]}"; do
-      [ "${names[i]}" == "${BRG:-vmbr0}" ] && preselect="${names[i]}"
-    done
-    for i in "${!names[@]}"; do
-      menu+=("${names[i]}" "${types[i]}" "$(wt_status "${names[i]}" "$preselect")")
-    done
-    BRG=$(wt --title "BRIDGE" --radiolist "Choose the network bridge" "${menu[@]}") || exit-script
-  fi
-  echo -e "${DGN}Using Bridge: ${BGN}$BRG${CL}"
 }
 
-# This function warns when the disk doesn't fit in the container storage's free space, it fails if the user doesn't go on.
-disk_space_check() {
-  awk -v size="$DISK_SIZE" -v kib="$CONTAINER_STORAGE_FREE" 'BEGIN {exit !(size * 1048576 <= kib)}' && return 0
-  wt --defaultno --title "DISK SPACE" --yesno "Disk size: $DISK_SIZE GiB\nFree on $CONTAINER_STORAGE: $(kib_to_gib "$CONTAINER_STORAGE_FREE") GiB\nContinue anyway?"
+# Succeeds when $1 GiB fits in the container storage's free space
+disk_fits() {
+  awk -v size="$1" -v kib="$CONTAINER_STORAGE_FREE" 'BEGIN {exit !(size * 1048576 <= kib)}'
 }
 
-# This function allows the user to configure advanced settings for the script.
-advanced_settings() {
-  if [ "$var_os" != "alpine" ] && [ "${var_os_locked:-no}" != "yes" ]; then
-    var_os=$(wt --title "DISTRIBUTION" --radiolist "Choose the distribution" \
-      "debian" "" "$(wt_status debian "$var_os")" \
-      "ubuntu" "" "$(wt_status ubuntu "$var_os")") || exit-script
+# Asks whether to go on with a $1 GiB disk that doesn't fit, fails if the user doesn't
+disk_space_warning() {
+  wt --defaultno --title "DISK SPACE" --yesno "Disk size: $1 GiB\nFree on $CONTAINER_STORAGE: $(kib_to_gib "$CONTAINER_STORAGE_FREE") GiB\nContinue anyway?"
+}
+
+# step_* functions: one settings window each for run_steps, returning 0 Next, 1 Back, 255 ESC or 2 when nothing is shown
+
+step_distribution() {
+  if [ "$var_os" == "alpine" ] || [ "${var_os_locked:-no}" == "yes" ]; then
+    return 2
   fi
-  echo -e "${DGN}Using Distribution: ${BGN}$var_os${CL}"
+  local os
+  os=$(wt --title "DISTRIBUTION" --radiolist "Choose the distribution" \
+    "debian" "" "$(wt_status debian "$var_os")" \
+    "ubuntu" "" "$(wt_status ubuntu "$var_os")") || return
+  var_os="$os"
+}
 
-  if [ "$var_os" == "debian" ]; then
-    var_version=$(wt --title "DEBIAN VERSION" --radiolist "Choose the Debian version" \
-      "12" "Bookworm" "$(wt_status 12 "$var_version")" \
-      "13" "Trixie" "$(wt_status 13 "$var_version")") || exit-script
-  elif [ "$var_os" == "ubuntu" ]; then
-    var_version=$(wt --title "UBUNTU VERSION" --radiolist "Choose the Ubuntu version" \
-      "20.04" "Focal" "$(wt_status 20.04 "$var_version")" \
-      "22.04" "Jammy" "$(wt_status 22.04 "$var_version")" \
-      "24.04" "Noble" "$(wt_status 24.04 "$var_version")") || exit-script
-  fi
-  echo -e "${DGN}Using $var_os Version: ${BGN}$var_version${CL}"
+# Asked again when empty: no item preselected after a distribution change
+step_version() {
+  local version=""
+  while [ -z "$version" ]; do
+    if [ "$var_os" == "debian" ]; then
+      version=$(wt --title "DEBIAN VERSION" --radiolist "Choose the Debian version" \
+        "12" "Bookworm" "$(wt_status 12 "$var_version")" \
+        "13" "Trixie" "$(wt_status 13 "$var_version")") || return
+    elif [ "$var_os" == "ubuntu" ]; then
+      version=$(wt --title "UBUNTU VERSION" --radiolist "Choose the Ubuntu version" \
+        "20.04" "Focal" "$(wt_status 20.04 "$var_version")" \
+        "22.04" "Jammy" "$(wt_status 22.04 "$var_version")" \
+        "24.04" "Noble" "$(wt_status 24.04 "$var_version")") || return
+    else
+      return 2
+    fi
+  done
+  var_version="$version"
+}
 
-  CT_TYPE=$(wt --title "CONTAINER TYPE" --radiolist "Choose the container type" \
-    "1" "Unprivileged" "$(wt_status 1 "${CT_TYPE:-1}")" \
-    "0" "Privileged" "$(wt_status 0 "${CT_TYPE:-1}")") || exit-script
-  echo -e "${DGN}Using Container Type: ${BGN}$CT_TYPE${CL}"
-
+step_ct_id() {
+  local id="${CT_ID:-$NEXTID}"
   while true; do
-    PW1=$(wt --passwordbox "Set the root password, required for root SSH access\nLeave blank for automatic console login" --title "ROOT PASSWORD") || exit-script
-    if [ -z "$PW1" ]; then
-      PW=""
-      echo -e "${DGN}Using Root Password: ${BGN}Automatic Login${CL}"
+    id=$(wt --title "CONTAINER ID" --inputbox "Set the container ID" "$id") || return
+    id="${id:-$NEXTID}"
+    if ! is_number_in 100 999999999 "$id"; then
+      wt --title "CONTAINER ID" --msgbox "Invalid container ID: $id\nUse a number, 100 or more"
+    # Checks every VM and container of the cluster, pct status only knows containers
+    elif ! pvesh get /cluster/nextid --vmid "$id" &>/dev/null; then
+      wt --title "CONTAINER ID" --msgbox "Container ID $id is already in use\nby a VM or a container"
+    else
       break
     fi
-    if [[ "$PW1" == *" "* ]]; then
+  done
+  CT_ID="$id"
+}
+
+step_hostname() {
+  local hn="${HN:-$NSAPP}"
+  while true; do
+    hn=$(wt --title "HOSTNAME" --inputbox "Set the hostname" "$hn") || return
+    hn="${hn:-$NSAPP}"
+    is_dns_name "$hn" && break
+    wt --title "HOSTNAME" --msgbox "Invalid hostname: $hn\nUse letters, digits, hyphens and dots"
+  done
+  HN="${hn,,}"
+}
+
+step_ct_type() {
+  local ct_type
+  ct_type=$(wt --title "CONTAINER TYPE" --radiolist "Choose the container type" \
+    "1" "Unprivileged" "$(wt_status 1 "${CT_TYPE:-1}")" \
+    "0" "Privileged" "$(wt_status 0 "${CT_TYPE:-1}")") || return
+  CT_TYPE="$ct_type"
+}
+
+step_password() {
+  local pw1="${PW#-password }" pw2
+  while true; do
+    # Prefilled with the current password, so going back and forth keeps it
+    pw1=$(wt --title "ROOT PASSWORD" --passwordbox "Set the root password, required for root SSH access\nLeave blank for automatic console login" "$pw1") || return
+    if [ -z "$pw1" ]; then
+      PW=""
+      return 0
+    fi
+    # Already confirmed
+    if [ "$PW" == "-password $pw1" ]; then
+      return 0
+    fi
+    if [[ "$pw1" == *" "* ]]; then
       wt --title "ROOT PASSWORD" --msgbox "Password cannot contain spaces. Please try again."
       continue
     fi
-    if [ ${#PW1} -lt 5 ]; then
+    if [ ${#pw1} -lt 5 ]; then
       wt --title "ROOT PASSWORD" --msgbox "Password must be at least 5 characters long. Please try again."
       continue
     fi
-    PW2=$(wt --passwordbox "Confirm the root password" --title "ROOT PASSWORD") || exit-script
-    if [[ "$PW1" == "$PW2" ]]; then
-      PW="-password $PW1"
-      echo -e "${DGN}Using Root Password: ${BGN}********${CL}"
-      break
+    # Back from the confirmation asks the password again
+    pw2=$(wt --title "ROOT PASSWORD" --passwordbox "Confirm the root password") || { [ $? -eq 1 ] && continue; return 255; }
+    if [ "$pw1" == "$pw2" ]; then
+      PW="-password $pw1"
+      return 0
     fi
     wt --title "ROOT PASSWORD" --msgbox "Passwords do not match. Please try again."
   done
+}
 
+# Root SSH access needs a password
+step_ssh() {
+  if [[ "$PW" != -password* ]]; then
+    SSH="no"
+    return 2
+  fi
+  local ssh
+  ssh=$(wt --title "ROOT SSH ACCESS" --notags --default-item "${SSH:-no}" --menu "Enable root SSH access?" "yes" "Yes" "no" "No") || return
+  SSH="$ssh"
+}
+
+# Shown only when there are several
+step_template_storage() {
+  local storage
+  storage=$(select_storage "$TEMPLATE_STORAGE_LIST" "TEMPLATE STORAGE" "Choose the storage for the container template" "${TEMPLATE_STORAGE:-}") || return
+  TEMPLATE_STORAGE="$storage"
+  [ "$(wc -l <<< "$TEMPLATE_STORAGE_LIST")" -gt 1 ] || return 2
+}
+
+# Shown only when there are several, keeps the storage's free space in KiB
+step_container_storage() {
+  local storage
+  storage=$(select_storage "$CONTAINER_STORAGE_LIST" "CONTAINER STORAGE" "Choose the storage for the container disk" "${CONTAINER_STORAGE:-}") || return
+  CONTAINER_STORAGE="$storage"
+  CONTAINER_STORAGE_FREE=$(awk -v storage="$storage" '$1 == storage {print $6}' <<< "$CONTAINER_STORAGE_LIST")
+  [ "$(wc -l <<< "$CONTAINER_STORAGE_LIST")" -gt 1 ] || return 2
+}
+
+step_disk_size() {
+  local size="${DISK_SIZE:-$var_disk}"
   while true; do
-    CT_ID=$(wt --inputbox "Set the container ID" "${CT_ID:-$NEXTID}" --title "CONTAINER ID") || exit-script
-    CT_ID="${CT_ID:-$NEXTID}"
-    if ! is_number_in 100 999999999 "$CT_ID"; then
-      wt --title "CONTAINER ID" --msgbox "Invalid container ID: $CT_ID\nUse a number, 100 or more"
-    # Checks every VM and container of the cluster, pct status only knows containers
-    elif ! pvesh get /cluster/nextid --vmid "$CT_ID" &>/dev/null; then
-      wt --title "CONTAINER ID" --msgbox "Container ID $CT_ID is already in use\nby a VM or a container"
-    else
-      break
-    fi
-  done
-  echo -e "${DGN}Using Container ID: ${BGN}$CT_ID${CL}"
-
-  while true; do
-    HN=$(wt --inputbox "Set the hostname" "${HN:-$NSAPP}" --title "HOSTNAME") || exit-script
-    HN="${HN:-$NSAPP}"
-    is_dns_name "$HN" && break
-    wt --title "HOSTNAME" --msgbox "Invalid hostname: $HN\nUse letters, digits, hyphens and dots"
-  done
-  HN="${HN,,}"
-  echo -e "${DGN}Using Hostname: ${BGN}$HN${CL}"
-
-  storage_settings
-
-  while true; do
-    DISK_SIZE=$(wt --inputbox "Set the disk size in GiB\n$(kib_to_gib "$CONTAINER_STORAGE_FREE") GiB free on $CONTAINER_STORAGE" "${DISK_SIZE:-$var_disk}" --title "DISK SIZE") || exit-script
-    DISK_SIZE="${DISK_SIZE:-$var_disk}"
-    if ! [[ "$DISK_SIZE" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
-      wt --title "DISK SIZE" --msgbox "Invalid disk size: $DISK_SIZE\nUse a number of GiB, e.g. 16"
+    size=$(wt --title "DISK SIZE" --inputbox "Set the disk size in GiB\n$(kib_to_gib "$CONTAINER_STORAGE_FREE") GiB free on $CONTAINER_STORAGE" "$size") || return
+    size="${size:-$var_disk}"
+    if ! [[ "$size" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+      wt --title "DISK SIZE" --msgbox "Invalid disk size: $size\nUse a number of GiB, e.g. 16"
       continue
     fi
-    disk_space_check && break
+    disk_fits "$size" && break
+    # No on the warning asks the size again
+    disk_space_warning "$size" && break
   done
-  echo -e "${DGN}Using Disk Size: ${BGN}$DISK_SIZE GiB${CL}"
+  DISK_SIZE="$size"
+}
 
+# Default mode only, where the disk size isn't asked: No goes back
+step_disk_space() {
+  disk_fits "$DISK_SIZE" && return 2
+  disk_space_warning "$DISK_SIZE"
+}
+
+step_cpu() {
+  local cores="${CORE_COUNT:-$var_cpu}"
   while true; do
-    CORE_COUNT=$(wt --inputbox "Set the number of CPU cores" "${CORE_COUNT:-$var_cpu}" --title "CPU CORES") || exit-script
-    CORE_COUNT="${CORE_COUNT:-$var_cpu}"
-    is_number_in 1 8192 "$CORE_COUNT" && break
-    wt --title "CPU CORES" --msgbox "Invalid number of CPU cores: $CORE_COUNT\nUse a whole number from 1 to 8192"
+    cores=$(wt --title "CPU CORES" --inputbox "Set the number of CPU cores" "$cores") || return
+    cores="${cores:-$var_cpu}"
+    is_number_in 1 8192 "$cores" && break
+    wt --title "CPU CORES" --msgbox "Invalid number of CPU cores: $cores\nUse a whole number from 1 to 8192"
   done
-  echo -e "${DGN}Using CPU Cores: ${BGN}$CORE_COUNT${CL}"
+  CORE_COUNT="$cores"
+}
 
+step_ram() {
+  local ram="${RAM_SIZE:-$var_ram}"
   while true; do
-    RAM_SIZE=$(wt --inputbox "Set the RAM size in MiB" "${RAM_SIZE:-$var_ram}" --title "RAM") || exit-script
-    RAM_SIZE="${RAM_SIZE:-$var_ram}"
-    [[ "$RAM_SIZE" =~ ^[0-9]{1,9}$ ]] && [ "$RAM_SIZE" -ge 16 ] && break
-    wt --title "RAM" --msgbox "Invalid RAM size: $RAM_SIZE\nUse a whole number of MiB, 16 or more"
+    ram=$(wt --title "RAM" --inputbox "Set the RAM size in MiB" "$ram") || return
+    ram="${ram:-$var_ram}"
+    [[ "$ram" =~ ^[0-9]{1,9}$ ]] && [ "$ram" -ge 16 ] && break
+    wt --title "RAM" --msgbox "Invalid RAM size: $ram\nUse a whole number of MiB, 16 or more"
   done
-  echo -e "${DGN}Using RAM Size: ${BGN}$RAM_SIZE MiB${CL}"
+  RAM_SIZE="$ram"
+}
 
-  bridge_settings
-
-  while true; do
-    NET=$(wt --inputbox "Set a static IPv4 address, e.g. 192.168.1.50/24\nKeep dhcp for automatic addressing" "${NET:-dhcp}" --title "IPv4 ADDRESS") || exit-script
-    NET="${NET:-dhcp}"
-    [ "$NET" == "dhcp" ] && break
-    is_ipv4 "${NET%/*}" && [[ "$NET" =~ /([0-9]|[12][0-9]|3[0-2])$ ]] && break
-    wt --title "IPv4 ADDRESS" --msgbox "Invalid IPv4 address: $NET\nUse the format 192.168.1.50/24, or dhcp"
-  done
-  echo -e "${DGN}Using IP Address: ${BGN}$NET${CL}"
-
-  # GATE1 is kept with dhcp, so a rerun switching back to a static address finds it again
-  if [ "$NET" != "dhcp" ]; then
-    while true; do
-      GATE1=$(wt --inputbox "Set the gateway IPv4 address, e.g. 192.168.1.1" "${GATE1:-}" --title "GATEWAY") || exit-script
-      is_ipv4 "$GATE1" && break
-      wt --title "GATEWAY" --msgbox "Invalid gateway address: $GATE1\nUse the format 192.168.1.1"
-    done
-    GATE=",gw=$GATE1"
-    echo -e "${DGN}Using Gateway IP Address: ${BGN}$GATE1${CL}"
-  else
-    GATE=""
-    echo -e "${DGN}Using Gateway IP Address: ${BGN}Default${CL}"
+step_bridge() {
+  if [ ${#BRIDGE_NAMES[@]} -eq 1 ]; then
+    BRG="${BRIDGE_NAMES[0]}"
+    return 2
   fi
+  local menu=() preselect="${BRIDGE_NAMES[0]}" bridge i
+  for i in "${!BRIDGE_NAMES[@]}"; do
+    [ "${BRIDGE_NAMES[i]}" == "${BRG:-vmbr0}" ] && preselect="${BRIDGE_NAMES[i]}"
+  done
+  for i in "${!BRIDGE_NAMES[@]}"; do
+    menu+=("${BRIDGE_NAMES[i]}" "${BRIDGE_TYPES[i]}" "$(wt_status "${BRIDGE_NAMES[i]}" "$preselect")")
+  done
+  bridge=$(wt --title "BRIDGE" --radiolist "Choose the network bridge" "${menu[@]}") || return
+  BRG="$bridge"
+}
 
+step_ipv4() {
+  local net="${NET:-dhcp}"
+  while true; do
+    net=$(wt --title "IPv4 ADDRESS" --inputbox "Set a static IPv4 address, e.g. 192.168.1.50/24\nKeep dhcp for automatic addressing" "$net") || return
+    net="${net:-dhcp}"
+    [ "$net" == "dhcp" ] && break
+    is_ipv4 "${net%/*}" && [[ "$net" =~ /([0-9]|[12][0-9]|3[0-2])$ ]] && break
+    wt --title "IPv4 ADDRESS" --msgbox "Invalid IPv4 address: $net\nUse the format 192.168.1.50/24, or dhcp"
+  done
+  NET="$net"
+}
+
+# GATE1 is kept with dhcp, so switching back finds it again
+step_gateway() {
+  if [ "$NET" == "dhcp" ]; then
+    GATE=""
+    return 2
+  fi
+  local gate="${GATE1:-}"
+  while true; do
+    gate=$(wt --title "GATEWAY" --inputbox "Set the gateway IPv4 address, e.g. 192.168.1.1" "$gate") || return
+    is_ipv4 "$gate" && break
+    wt --title "GATEWAY" --msgbox "Invalid gateway address: $gate\nUse the format 192.168.1.1"
+  done
+  GATE1="$gate"
+  GATE=",gw=$GATE1"
+}
+
+step_ipv6() {
+  local disable
+  disable=$(wt --title "IPv6" --notags --default-item "${DISABLEIP6:-no}" --menu "Disable IPv6?" "yes" "Yes" "no" "No") || return
+  DISABLEIP6="$disable"
+}
+
+step_vlan() {
+  local vlan="${VLAN1:-}"
+  while true; do
+    vlan=$(wt --title "VLAN" --inputbox "Set the VLAN tag\nLeave blank for none" "$vlan") || return
+    [ -z "$vlan" ] && break
+    is_number_in 1 4094 "$vlan" && break
+    wt --title "VLAN" --msgbox "Invalid VLAN tag: $vlan\nUse a number from 1 to 4094, or leave blank"
+  done
+  VLAN1="$vlan"
+  VLAN="${VLAN1:+,tag=$VLAN1}"
+}
+
+step_mac() {
+  local mac="${MAC1:-}"
+  while true; do
+    mac=$(wt --title "MAC ADDRESS" --inputbox "Set the MAC address\nLeave blank for a generated one" "$mac") || return
+    [ -z "$mac" ] && break
+    # Proxmox refuses multicast addresses: the second hex digit must be even
+    [[ "$mac" =~ ^[a-fA-F0-9][02468aceACE](:[a-fA-F0-9]{2}){5}$ ]] && break
+    wt --title "MAC ADDRESS" --msgbox "Invalid MAC address: $mac\nUse a unicast MAC, e.g. 02:00:00:00:00:01"
+  done
+  MAC1="$mac"
+  MAC="${MAC1:+,hwaddr=$MAC1}"
+}
+
+step_mtu() {
+  local mtu="${MTU1:-}"
+  while true; do
+    mtu=$(wt --title "MTU" --inputbox "Set the interface MTU size\nLeave blank for default" "$mtu") || return
+    [ -z "$mtu" ] && break
+    is_number_in 64 65535 "$mtu" && break
+    wt --title "MTU" --msgbox "Invalid MTU size: $mtu\nUse a number from 64 to 65535, or leave blank"
+  done
+  MTU1="$mtu"
+  MTU="${MTU1:+,mtu=$MTU1}"
+}
+
+step_dns_server() {
+  local nx
+  nx=$(wt --title "DNS SERVER" --inputbox "Set the DNS server IP address\nLeave blank to use the host's" "${NX:-}") || return
+  NX="$nx"
+  NS="${NX:+-nameserver=$NX}"
+}
+
+step_search_domain() {
+  local sx
+  sx=$(wt --title "DNS SEARCH DOMAIN" --inputbox "Set the DNS search domain\nLeave blank to use the host's" "${SX:-}") || return
+  SX="$sx"
+  SD="${SX:+-searchdomain=$SX}"
+}
+
+step_apt_cacher() {
   if [ "$var_os" == "alpine" ]; then
     APT_CACHER=""
     APT_CACHER_IP=""
-  else
-    while true; do
-      APT_CACHER_IP=$(wt --inputbox "Set the APT-Cacher IP address\nLeave blank to not use one" "${APT_CACHER_IP:-}" --title "APT-CACHER") || exit-script
-      [ -z "$APT_CACHER_IP" ] && break
-      is_dns_name "$APT_CACHER_IP" && break
-      wt --title "APT-CACHER" --msgbox "Invalid APT-Cacher address: $APT_CACHER_IP\nUse an IP address or a host name"
-    done
-    APT_CACHER="${APT_CACHER_IP:+yes}"
+    return 2
   fi
-  echo -e "${DGN}Using APT-Cacher IP Address: ${BGN}${APT_CACHER_IP:-Default}${CL}"
-
-  if wt --defaultno --title "IPv6" --yesno "Disable IPv6?"; then
-    DISABLEIP6="yes"
-  else
-    DISABLEIP6="no"
-  fi
-  echo -e "${DGN}Disable IPv6: ${BGN}$DISABLEIP6${CL}"
-
+  local cacher="${APT_CACHER_IP:-}"
   while true; do
-    MTU1=$(wt --inputbox "Set the interface MTU size\nLeave blank for default" "${MTU1:-}" --title "MTU") || exit-script
-    [ -z "$MTU1" ] && break
-    is_number_in 64 65535 "$MTU1" && break
-    wt --title "MTU" --msgbox "Invalid MTU size: $MTU1\nUse a number from 64 to 65535, or leave blank"
+    cacher=$(wt --title "APT-CACHER" --inputbox "Set the APT-Cacher IP address\nLeave blank to not use one" "$cacher") || return
+    [ -z "$cacher" ] && break
+    is_dns_name "$cacher" && break
+    wt --title "APT-CACHER" --msgbox "Invalid APT-Cacher address: $cacher\nUse an IP address or a host name"
   done
-  MTU="${MTU1:+,mtu=$MTU1}"
-  echo -e "${DGN}Using Interface MTU Size: ${BGN}${MTU1:-Default}${CL}"
+  APT_CACHER_IP="$cacher"
+  APT_CACHER="${APT_CACHER_IP:+yes}"
+}
 
-  SX=$(wt --inputbox "Set the DNS search domain\nLeave blank to use the host's" "${SX:-}" --title "DNS SEARCH DOMAIN") || exit-script
-  SD="${SX:+-searchdomain=$SX}"
-  echo -e "${DGN}Using DNS Search Domain: ${BGN}${SX:-Host}${CL}"
+step_verbose() {
+  local verb
+  verb=$(wt --title "VERBOSE MODE" --notags --default-item "${VERB:-no}" --menu "Enable verbose mode?" "yes" "Yes" "no" "No") || return
+  VERB="$verb"
+}
 
-  NX=$(wt --inputbox "Set the DNS server IP address\nLeave blank to use the host's" "${NX:-}" --title "DNS SERVER") || exit-script
-  NS="${NX:+-nameserver=$NX}"
-  echo -e "${DGN}Using DNS Server IP Address: ${BGN}${NX:-Host}${CL}"
+step_confirm() {
+  wt --title "CONFIRMATION" --yes-button Create --no-button Back --yesno "Ready to create the ${APP} LXC?\n\n$(settings_summary)"
+}
 
-  while true; do
-    MAC1=$(wt --inputbox "Set the MAC address\nLeave blank for a generated one" "${MAC1:-}" --title "MAC ADDRESS") || exit-script
-    [ -z "$MAC1" ] && break
-    # Proxmox refuses multicast addresses: the second hex digit must be even
-    [[ "$MAC1" =~ ^[a-fA-F0-9][02468aceACE](:[a-fA-F0-9]{2}){5}$ ]] && break
-    wt --title "MAC ADDRESS" --msgbox "Invalid MAC address: $MAC1\nUse a unicast MAC, e.g. 02:00:00:00:00:01"
-  done
-  MAC="${MAC1:+,hwaddr=$MAC1}"
-  echo -e "${DGN}Using MAC Address: ${BGN}${MAC1:-Default}${CL}"
-
-  while true; do
-    VLAN1=$(wt --inputbox "Set the VLAN tag\nLeave blank for none" "${VLAN1:-}" --title "VLAN") || exit-script
-    [ -z "$VLAN1" ] && break
-    is_number_in 1 4094 "$VLAN1" && break
-    wt --title "VLAN" --msgbox "Invalid VLAN tag: $VLAN1\nUse a number from 1 to 4094, or leave blank"
-  done
-  VLAN="${VLAN1:+,tag=$VLAN1}"
-  echo -e "${DGN}Using Vlan: ${BGN}${VLAN1:-Default}${CL}"
-
-  if [[ "$PW" == -password* ]]; then
-    if wt --defaultno --title "ROOT SSH ACCESS" --yesno "Enable root SSH access?"; then
-      SSH="yes"
-    else
-      SSH="no"
+# Runs the given steps: Next goes on, Back returns to the previous shown step, ESC exits
+run_steps() {
+  local steps=("$@") i=0 dir=1 rc
+  # Read by wt
+  local WT_NAV="yes"
+  while [ $i -lt ${#steps[@]} ]; do
+    rc=0
+    "${steps[i]}" || rc=$?
+    case $rc in
+      0) dir=1 ;;
+      1) dir=-1 ;;
+      255) exit-script ;;
+    esac
+    # 2 = nothing shown: keep going the same way
+    i=$((i + dir))
+    if [ $i -lt 0 ]; then
+      return 1
     fi
-  else
-    SSH="no"
-  fi
-  echo -e "${DGN}Enable Root SSH Access: ${BGN}$SSH${CL}"
+  done
+}
 
-  if wt --defaultno --title "VERBOSE MODE" --yesno "Enable verbose mode?"; then
-    VERB="yes"
-  else
-    VERB="no"
-  fi
-  echo -e "${DGN}Enable Verbose Mode: ${BGN}$VERB${CL}"
+advanced_settings() {
+  run_steps step_distribution step_version step_ct_id step_hostname \
+    step_ct_type step_password step_ssh \
+    step_template_storage step_container_storage step_disk_size step_cpu step_ram \
+    step_bridge step_ipv4 step_gateway step_ipv6 step_vlan step_mac step_mtu \
+    step_dns_server step_search_domain \
+    step_apt_cacher step_verbose "${app_settings[@]}" step_confirm
+}
 
-  # App-specific questions, optionally defined by ct/<app>.sh
-  if declare -F app_settings >/dev/null; then
-    app_settings
+# "Label: value" lines, in the steps' order
+settings_summary() {
+  echo "Distribution: $var_os"
+  echo "${var_os^} version: $var_version"
+  echo "Container ID: $CT_ID"
+  echo "Hostname: $HN"
+  echo "Container type: $([ "$CT_TYPE" == "1" ] && echo Unprivileged || echo Privileged)"
+  echo "Root password: $([ -n "$PW" ] && echo "********" || echo "automatic console login")"
+  echo "Root SSH access: $([ "$SSH" == "yes" ] && echo enabled || echo disabled)"
+  echo "Template storage: $TEMPLATE_STORAGE"
+  echo "Container storage: $CONTAINER_STORAGE"
+  echo "Disk size: $DISK_SIZE GiB"
+  echo "CPU cores: $CORE_COUNT"
+  echo "RAM size: $RAM_SIZE MiB"
+  echo "Bridge: $BRG"
+  echo "IPv4 address: $NET"
+  if [ "$NET" != "dhcp" ]; then
+    echo "Gateway: $GATE1"
   fi
-
-  if wt --title "CONFIRMATION" --yesno "Ready to create the ${APP} LXC?"; then
-    echo -e "${RD}Creating a ${APP} LXC using the above advanced settings${CL}"
-  else
-    clear
-    header_info
-    echo -e "${RD}Using Advanced Settings${CL}"
-    advanced_settings
+  echo "IPv6: $([ "$DISABLEIP6" == "yes" ] && echo disabled || echo enabled)"
+  echo "VLAN: ${VLAN1:-none}"
+  echo "MAC address: ${MAC1:-generated}"
+  echo "MTU: ${MTU1:-default}"
+  echo "DNS server: ${NX:-same as host}"
+  echo "DNS search domain: ${SX:-same as host}"
+  if [ "$var_os" != "alpine" ]; then
+    echo "APT-Cacher: ${APT_CACHER_IP:-none}"
+  fi
+  echo "Verbose mode: $([ "$VERB" == "yes" ] && echo enabled || echo disabled)"
+  # App-specific lines, optionally defined by ct/<app>.sh
+  if declare -F app_summary >/dev/null; then
+    app_summary
   fi
 }
 
+echo_settings() {
+  local line
+  while IFS= read -r line; do
+    echo -e "${DGN}${line%%: *}: ${BGN}${line#*: }${CL}"
+  done <<< "$(settings_summary)"
+}
+
 install_script() {
+  local rc mode
   pve_check
   shell_check
   root_check
@@ -593,7 +724,7 @@ install_script() {
   # fi
   NEXTID=$(pvesh get /cluster/nextid)
   # timedatectl is more reliable than /etc/timezone on newer systemd-based
-  # hosts (e.g. Debian 13); fall back to /etc/timezone for older systems.
+  # hosts (e.g. Debian 13); fall back to /etc/timezone for older systems
   if command -v timedatectl >/dev/null 2>&1; then
     timezone=$(timedatectl show --value --property=Timezone 2>/dev/null || echo "UTC")
   elif [ -f /etc/timezone ]; then
@@ -601,20 +732,29 @@ install_script() {
   else
     timezone="UTC"
   fi
+  host_lists
+  # Every setting gets a value before any window, advanced_settings prefills from them
+  default_settings
+  # Going back from the first step returns here
+  while true; do
+    header_info
+    rc=0
+    wt --title "SETTINGS" --yesno "Use default settings?" --no-button Advanced || rc=$?
+    if [ $rc -eq 255 ]; then
+      exit-script
+    elif [ $rc -eq 0 ]; then
+      mode="default"
+      default_settings
+      run_steps step_template_storage step_container_storage step_disk_space step_bridge && break
+    else
+      mode="advanced"
+      advanced_settings && break
+    fi
+  done
   header_info
-  if wt --title "SETTINGS" --yesno "Use default settings?" --no-button Advanced; then
-    header_info
-    echo -e "${BL}Using Default Settings${CL}"
-    default_settings
-    storage_settings
-    disk_space_check || exit-script
-    bridge_settings
-    echo -e "${BL}Creating a ${APP} LXC using the above default settings${CL}"
-  else
-    header_info
-    echo -e "${RD}Using Advanced Settings${CL}"
-    advanced_settings
-  fi
+  echo -e "${BL}Using ${mode^} Settings${CL}"
+  echo_settings
+  echo -e "${BL}Creating a ${APP} LXC using the above ${mode} settings${CL}"
 }
 
 start() {
@@ -627,7 +767,6 @@ start() {
   fi
 }
 
-# This function downloads the template if needed and creates the container.
 create_container() {
   local template_search templates template
   msg_info "Updating LXC Template List"
@@ -783,7 +922,6 @@ EOF'
 
 }
 
-# This function prints the container's IPv4 address on eth0.
 get_ip() {
   pct exec "$CTID" ip a s dev eth0 | awk '/inet / {print $2}' | cut -d/ -f1
 }
@@ -791,7 +929,7 @@ get_ip() {
 # This function sets the description of the container.
 description() {
   : # no-op: everything below is commented out for now
-  # tteck's original also set a logo + Ko-fi link here, text not decided yet.
+  # tteck's original also set a logo + Ko-fi link here, text not decided yet
   # pct set "$CTID" -description "<div align='center'><a href='https://Helper-Scripts.com' target='_blank' rel='noopener noreferrer'><img src='https://raw.githubusercontent.com/tteck/Proxmox/main/misc/images/logo-81x112.png'/></a>
   #
   # # ${APP} LXC

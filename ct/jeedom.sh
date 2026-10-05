@@ -29,49 +29,65 @@ var_os_locked="yes"
 var_version="12"
 var_color_primary="color106"
 var_color_theme="dark"
+app_settings=(step_jeedom_branch step_jeedom_other_branch)
+# From the command line, if any
+DEFAULT_JEEDOM_BRANCH="${JEEDOM_BRANCH:-master}"
 variables
 color
 catch_errors
 
-function app_settings() {
-  local branch_list branch branches=()
-  # Preselect a branch passed on the command line
-  local provided="${JEEDOM_BRANCH:-}" preselect=() other_preselect=()
-  case "$provided" in
-    "") ;;
-    master | release | develop) preselect=(--default-item "$provided") ;;
-    *) preselect=(--default-item "other"); other_preselect=(--default-item "$provided") ;;
+function step_jeedom_branch() {
+  local choice="${JEEDOM_BRANCH_CHOICE:-$DEFAULT_JEEDOM_BRANCH}"
+  case "$choice" in
+    master | release | develop | other) ;;
+    *) choice="other" ;;
   esac
-
-  JEEDOM_BRANCH=$(wt --title "JEEDOM BRANCH" "${preselect[@]}" --menu "Choose the Jeedom branch to install" \
+  choice=$(wt --title "JEEDOM BRANCH" --default-item "$choice" --menu "Choose the Jeedom branch to install" \
     "master" "Stable" \
     "release" "Pre-release" \
     "develop" "Development" \
-    "other" "Other branch") || exit-script
+    "other" "Other branch") || return
+  JEEDOM_BRANCH_CHOICE="$choice"
+  if [ "$choice" != "other" ]; then
+    export JEEDOM_BRANCH="$choice"
+  fi
+}
 
-  if [ "$JEEDOM_BRANCH" == "other" ]; then
+function step_jeedom_other_branch() {
+  if [ "${JEEDOM_BRANCH_CHOICE:-}" != "other" ]; then
+    return 2
+  fi
+  local branches=() name branch
+  if [ -z "${JEEDOM_BRANCH_LIST:-}" ]; then
     # alpha, beta and V4-stable are obsolete but still on the repo
-    branch_list=$(curl -fsSL "https://api.github.com/repos/jeedom/core/branches?per_page=100" \
+    JEEDOM_BRANCH_LIST=$(curl -fsSL "https://api.github.com/repos/jeedom/core/branches?per_page=100" \
       | grep -o '"name": *"[^"]*"' | cut -d'"' -f4 \
       | grep -vxE 'master|release|develop|alpha|beta|V4-stable' || true)
-    for branch in $branch_list; do
-      branches+=("$branch" "")
-    done
-
-    if [ ${#branches[@]} -gt 0 ]; then
-      JEEDOM_BRANCH=$(wt --title "JEEDOM BRANCH" "${other_preselect[@]}" --menu "Choose another branch (not supported)" \
-        "${branches[@]}") || exit-script
-    else
-      while true; do
-        JEEDOM_BRANCH=$(wt --title "JEEDOM BRANCH" --inputbox "Set the branch name\nBranch list unavailable") || exit-script
-        jeedom_branch_exists "$JEEDOM_BRANCH" && break
-        wt --title "JEEDOM BRANCH" --msgbox "Branch '${JEEDOM_BRANCH}' not found"
-      done
-    fi
   fi
+  for name in $JEEDOM_BRANCH_LIST; do
+    branches+=("$name" "")
+  done
 
-  export JEEDOM_BRANCH
-  echo -e "${DGN}Using Jeedom Branch: ${BGN}$JEEDOM_BRANCH${CL}"
+  if [ ${#branches[@]} -gt 0 ]; then
+    branch=$(wt --title "JEEDOM BRANCH" --default-item "$JEEDOM_BRANCH" --menu "Choose another branch (not supported)" \
+      "${branches[@]}") || return
+  else
+    branch="$JEEDOM_BRANCH"
+    while true; do
+      branch=$(wt --title "JEEDOM BRANCH" --inputbox "Set the branch name\nBranch list unavailable" "$branch") || return
+      jeedom_branch_exists "$branch" && break
+      wt --title "JEEDOM BRANCH" --msgbox "Branch '${branch}' not found"
+    done
+  fi
+  export JEEDOM_BRANCH="$branch"
+}
+
+function app_default_settings() {
+  export JEEDOM_BRANCH="$DEFAULT_JEEDOM_BRANCH"
+}
+
+function app_summary() {
+  echo "Jeedom branch: $JEEDOM_BRANCH"
 }
 
 function jeedom_branch_exists() {

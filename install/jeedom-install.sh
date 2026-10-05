@@ -15,58 +15,57 @@ setting_up_container
 network_check
 update_os
 
-# Set by ct/jeedom.sh (advanced settings or command line)
-BRANCH="${JEEDOM_BRANCH:-master}"
-msg_ok "Installing Jeedom from branch: ${BRANCH}"
+# JEEDOM_BRANCH is exported by ct/jeedom.sh
+msg_ok "Installing Jeedom from branch: ${JEEDOM_BRANCH}"
 
 msg_info "Downloading Jeedom installation script"
 cd /tmp
-wget -q https://raw.githubusercontent.com/jeedom/core/"${BRANCH}"/install/install.sh
+wget -q https://raw.githubusercontent.com/jeedom/core/"${JEEDOM_BRANCH}"/install/install.sh
 chmod +x install.sh
 msg_ok "Installation script downloaded"
 
 msg_info "Installing Jeedom main dependencies, please wait"
-$STD ./install.sh -v "$BRANCH" -s 2
+$STD ./install.sh -v "$JEEDOM_BRANCH" -s 2
 msg_ok "Installed Jeedom main dependencies"
 
 msg_info "Installing database"
-$STD ./install.sh -v "$BRANCH" -s 3
+$STD ./install.sh -v "$JEEDOM_BRANCH" -s 3
 msg_ok "Installed database"
 
 msg_info "Installing Apache"
-$STD ./install.sh -v "$BRANCH" -s 4
+$STD ./install.sh -v "$JEEDOM_BRANCH" -s 4
 msg_ok "Installed Apache"
 
 msg_info "Installing PHP and dependencies"
-$STD ./install.sh -v "$BRANCH" -s 5
+$STD ./install.sh -v "$JEEDOM_BRANCH" -s 5
 msg_ok "Installed PHP"
 
 msg_info "Downloading Jeedom core"
-$STD ./install.sh -v "$BRANCH" -s 6
+$STD ./install.sh -v "$JEEDOM_BRANCH" -s 6
 msg_ok "Downloaded Jeedom core"
 
 msg_info "Customizing database"
-$STD ./install.sh -v "$BRANCH" -s 7
+$STD ./install.sh -v "$JEEDOM_BRANCH" -s 7
 msg_ok "Customized database"
 
 msg_info "Customizing Jeedom"
-$STD ./install.sh -v "$BRANCH" -s 8
+$STD ./install.sh -v "$JEEDOM_BRANCH" -s 8
 msg_ok "Customized Jeedom"
 
 msg_info "Configuring Jeedom"
-$STD ./install.sh -v "$BRANCH" -s 9
+$STD ./install.sh -v "$JEEDOM_BRANCH" -s 9
 msg_ok "Configured Jeedom"
 
 msg_info "Installing Jeedom"
-$STD ./install.sh -v "$BRANCH" -s 10
+$STD ./install.sh -v "$JEEDOM_BRANCH" -s 10
 msg_ok "Installed Jeedom"
 
 msg_info "Running post-installation steps"
-$STD ./install.sh -v "$BRANCH" -s 11
+$STD ./install.sh -v "$JEEDOM_BRANCH" -s 11
 msg_ok "Post-installation done"
 
 msg_info "Checking installation"
-$STD ./install.sh -v "$BRANCH" -s 12
+$STD ./install.sh -v "$JEEDOM_BRANCH" -s 12
 msg_ok "Installation checked, a reboot is recommended"
 
 motd_ssh
