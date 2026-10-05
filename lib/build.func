@@ -726,7 +726,8 @@ install_script() {
   default_settings
   # Going back from the first step returns here
   while true; do
-    header_info
+    # The shell shows between two windows, keep it blank
+    clear
     rc=0
     wt --title "SETTINGS" --yesno "Use default settings?" --no-button Advanced || rc=$?
     if [ $rc -eq 255 ]; then
