@@ -42,10 +42,10 @@ function step_jeedom_branch() {
     master | release | develop | other) ;;
     *) choice="other" ;;
   esac
-  choice=$(wt --title "JEEDOM BRANCH" --default-item "$choice" --menu "Choose the Jeedom branch to install" \
-    "master" "Stable" \
-    "release" "Pre-release" \
-    "develop" "Development" \
+  choice=$(wt --title "JEEDOM BRANCH" --notags --default-item "$choice" --menu "Choose the Jeedom branch to install" \
+    "master" "Stable (master)" \
+    "release" "Pre-release (release)" \
+    "develop" "Development (develop)" \
     "other" "Other branch") || return
   JEEDOM_BRANCH_CHOICE="$choice"
   if [ "$choice" != "other" ]; then
@@ -65,11 +65,11 @@ function step_jeedom_other_branch() {
       | grep -vxE 'master|release|develop|alpha|beta|V4-stable' || true)
   fi
   for name in $JEEDOM_BRANCH_LIST; do
-    branches+=("$name" "")
+    branches+=("$name" "$name")
   done
 
   if [ ${#branches[@]} -gt 0 ]; then
-    branch=$(wt --title "JEEDOM BRANCH" --default-item "$JEEDOM_BRANCH" --menu "Choose another branch (not supported)" \
+    branch=$(wt --title "JEEDOM BRANCH" --notags --default-item "$JEEDOM_BRANCH" --menu "Choose another branch (not supported)" \
       "${branches[@]}") || return
   else
     branch="$JEEDOM_BRANCH"

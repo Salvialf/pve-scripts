@@ -234,9 +234,13 @@ wt() {
         # newt's auto-size has no case for passwordbox and hides the text: 8 rows for one line, plus one per \n
         breaks="${2//\\n/}"
         args+=("$1" "$2" $(((${#2} - ${#breaks}) / 2 + 8)) 58); shift 2 ;;
-      --menu | --radiolist | --checklist)
+      --menu)
         box="$1"
-        args+=("$1" "$2" 0 58 0); shift 2 ;;
+        args+=("$1" "$2" 0 58 0); shift 2
+        # A space each side of the descriptions, so the highlight doesn't stick to the text
+        while [ $# -gt 0 ]; do
+          args+=("$1" " $2 "); shift 2
+        done ;;
       *)
         args+=("$1"); shift ;;
     esac
@@ -253,11 +257,6 @@ wt() {
   # A msgbox has nothing to answer: ESC closes it like OK instead of failing under set -e
   [ "$box" == "--msgbox" ] && rc=0
   return "$rc"
-}
-
-# ON when the item matches the value to preselect
-wt_status() {
-  [ "$1" == "$2" ] && echo ON || echo OFF
 }
 
 # Succeeds when $3 is a whole number between $1 and $2 (9 digits at most, so test can compare it)
@@ -284,20 +283,16 @@ kib_to_gib() {
 # Prints the storage to use, asking only when there are several
 # Arguments: pvesm status lines without header, window title, window text, storage to preselect (the first one if empty)
 select_storage() {
-  local names=() descs=() menu=() name type free i
+  local menu=() name type free
   # pvesm columns: Name Type Status Total Used Available %, sizes in KiB
   while read -r name type _ _ _ free _; do
-    names+=("$name")
-    descs+=("$(printf '%-10s %s GiB free' "$type" "$(kib_to_gib "$free")")")
+    menu+=("$name" "$(printf '%-10s %s GiB free' "$type" "$(kib_to_gib "$free")")")
   done <<< "$1"
-  if [ ${#names[@]} -eq 1 ]; then
-    echo "${names[0]}"
+  if [ ${#menu[@]} -eq 2 ]; then
+    echo "${menu[0]}"
     return
   fi
-  for i in "${!names[@]}"; do
-    menu+=("${names[i]}" "${descs[i]}" "$(wt_status "${names[i]}" "${4:-${names[0]}}")")
-  done
-  wt --title "$2" --radiolist "$3" "${menu[@]}"
+  wt --title "$2" --default-item "$4" --menu "$3" "${menu[@]}"
 }
 
 # Reads the host's storages and bridges once, before any window: a missing one stops the script here
@@ -345,29 +340,26 @@ step_distribution() {
     return 2
   fi
   local os
-  os=$(wt --title "DISTRIBUTION" --radiolist "Choose the distribution" \
-    "debian" "" "$(wt_status debian "$var_os")" \
-    "ubuntu" "" "$(wt_status ubuntu "$var_os")") || return
+  os=$(wt --title "DISTRIBUTION" --notags --default-item "$var_os" --menu "Choose the distribution" \
+    "debian" "Debian" \
+    "ubuntu" "Ubuntu") || return
   var_os="$os"
 }
 
-# Asked again when empty: no item preselected after a distribution change
 step_version() {
-  local version=""
-  while [ -z "$version" ]; do
-    if [ "$var_os" == "debian" ]; then
-      version=$(wt --title "DEBIAN VERSION" --radiolist "Choose the Debian version" \
-        "12" "Bookworm" "$(wt_status 12 "$var_version")" \
-        "13" "Trixie" "$(wt_status 13 "$var_version")") || return
-    elif [ "$var_os" == "ubuntu" ]; then
-      version=$(wt --title "UBUNTU VERSION" --radiolist "Choose the Ubuntu version" \
-        "20.04" "Focal" "$(wt_status 20.04 "$var_version")" \
-        "22.04" "Jammy" "$(wt_status 22.04 "$var_version")" \
-        "24.04" "Noble" "$(wt_status 24.04 "$var_version")") || return
-    else
-      return 2
-    fi
-  done
+  local version
+  if [ "$var_os" == "debian" ]; then
+    version=$(wt --title "DEBIAN VERSION" --notags --default-item "$var_version" --menu "Choose the Debian version" \
+      "12" "Bookworm (12)" \
+      "13" "Trixie (13)") || return
+  elif [ "$var_os" == "ubuntu" ]; then
+    version=$(wt --title "UBUNTU VERSION" --notags --default-item "$var_version" --menu "Choose the Ubuntu version" \
+      "20.04" "Focal (20.04)" \
+      "22.04" "Jammy (22.04)" \
+      "24.04" "Noble (24.04)") || return
+  else
+    return 2
+  fi
   var_version="$version"
 }
 
@@ -401,9 +393,9 @@ step_hostname() {
 
 step_ct_type() {
   local ct_type
-  ct_type=$(wt --title "CONTAINER TYPE" --radiolist "Choose the container type" \
-    "1" "Unprivileged" "$(wt_status 1 "${CT_TYPE:-1}")" \
-    "0" "Privileged" "$(wt_status 0 "${CT_TYPE:-1}")") || return
+  ct_type=$(wt --title "CONTAINER TYPE" --notags --default-item "$CT_TYPE" --menu "Choose the container type" \
+    "1" "Unprivileged" \
+    "0" "Privileged") || return
   CT_TYPE="$ct_type"
 }
 
@@ -515,14 +507,11 @@ step_bridge() {
     BRG="${BRIDGE_NAMES[0]}"
     return 2
   fi
-  local menu=() preselect="${BRIDGE_NAMES[0]}" bridge i
+  local menu=() bridge i
   for i in "${!BRIDGE_NAMES[@]}"; do
-    [ "${BRIDGE_NAMES[i]}" == "${BRG:-vmbr0}" ] && preselect="${BRIDGE_NAMES[i]}"
+    menu+=("${BRIDGE_NAMES[i]}" "${BRIDGE_TYPES[i]}")
   done
-  for i in "${!BRIDGE_NAMES[@]}"; do
-    menu+=("${BRIDGE_NAMES[i]}" "${BRIDGE_TYPES[i]}" "$(wt_status "${BRIDGE_NAMES[i]}" "$preselect")")
-  done
-  bridge=$(wt --title "BRIDGE" --radiolist "Choose the network bridge" "${menu[@]}") || return
+  bridge=$(wt --title "BRIDGE" --default-item "${BRG:-vmbr0}" --menu "Choose the network bridge" "${menu[@]}") || return
   BRG="$bridge"
 }
 
