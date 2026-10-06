@@ -529,7 +529,7 @@ step_gateway() {
   # The host's gateway is the right one when the container shares its network
   gateway="${gateway:-$(ip route show default | awk '{print $3; exit}')}" || true
   while true; do
-    gateway=$(wt --title "GATEWAY" --inputbox "Set the gateway IPv4 address, e.g. 192.168.1.1" "$gateway") || return
+    gateway=$(wt --title "GATEWAY" --inputbox "Set the gateway IPv4 address, e.g. 192.168.1.1\nPrefilled with the host's gateway" "$gateway") || return
     is_ipv4 "$gateway" && break
     wt --title "GATEWAY" --msgbox "Invalid gateway address: $gateway\nUse the format 192.168.1.1"
   done
