@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 variables() {
-  NSAPP=$(echo ${APP,,} | tr -d ' ') # This function sets the NSAPP variable by converting the value of the APP variable to lowercase and removing any spaces.
+  APP_SLUG=$(echo ${APP,,} | tr -d ' ') # default hostname and install/<slug>-install.sh name
   SPINNER_PID=""                     # read by msg_* and error_handler, which can run before start()
   BACKTITLE="Salvialf PVE scripts - ${APP} LXC" # shown on every whiptail window
   newt_colors                                   # whiptail palette from the ct script's var_color_*
@@ -156,31 +156,24 @@ default_settings() {
   DEFAULT_VERSION="${DEFAULT_VERSION:-$var_version}"
   var_os="$DEFAULT_OS"
   var_version="$DEFAULT_VERSION"
-  CT_TYPE="1"
-  PW=""
+  UNPRIVILEGED="1"
+  ROOT_PASSWORD=""
   CT_ID=$NEXTID
-  HN=$NSAPP
+  CT_HOSTNAME=$APP_SLUG
   DISK_SIZE="$var_disk"
   CORE_COUNT="$var_cpu"
   RAM_SIZE="$var_ram"
-  NET="dhcp"
-  GATE=""
-  GATE1=""
+  IPV4="dhcp"
+  GATEWAY=""
   APT_CACHER=""
-  APT_CACHER_IP=""
-  DISABLEIP6="no"
+  DISABLE_IPV6="no"
   MTU=""
-  MTU1=""
-  SD=""
-  SX=""
-  NS=""
-  NX=""
+  SEARCH_DOMAIN=""
+  DNS_SERVER=""
   MAC=""
-  MAC1=""
   VLAN=""
-  VLAN1=""
-  SSH="no"
-  VERB="no"
+  ROOT_SSH="no"
+  VERBOSE="no"
   # The ct script's app_settings values, if any
   if declare -F app_default_settings >/dev/null; then
     app_default_settings
@@ -381,35 +374,35 @@ step_ct_id() {
 }
 
 step_hostname() {
-  local hn="${HN:-$NSAPP}"
+  local name="${CT_HOSTNAME:-$APP_SLUG}"
   while true; do
-    hn=$(wt --title "HOSTNAME" --inputbox "Set the hostname" "$hn") || return
-    hn="${hn:-$NSAPP}"
-    is_dns_name "$hn" && break
-    wt --title "HOSTNAME" --msgbox "Invalid hostname: $hn\nUse letters, digits, hyphens and dots"
+    name=$(wt --title "HOSTNAME" --inputbox "Set the hostname" "$name") || return
+    name="${name:-$APP_SLUG}"
+    is_dns_name "$name" && break
+    wt --title "HOSTNAME" --msgbox "Invalid hostname: $name\nUse letters, digits, hyphens and dots"
   done
-  HN="${hn,,}"
+  CT_HOSTNAME="${name,,}"
 }
 
 step_ct_type() {
-  local ct_type
-  ct_type=$(wt --title "CONTAINER TYPE" --notags --default-item "$CT_TYPE" --menu "Choose the container type" \
+  local unprivileged
+  unprivileged=$(wt --title "CONTAINER TYPE" --notags --default-item "$UNPRIVILEGED" --menu "Choose the container type" \
     "1" "Unprivileged" \
     "0" "Privileged") || return
-  CT_TYPE="$ct_type"
+  UNPRIVILEGED="$unprivileged"
 }
 
 step_password() {
-  local pw1="${PW#-password }" pw2
+  local pw1="$ROOT_PASSWORD" pw2
   while true; do
     # Prefilled with the current password, so going back and forth keeps it
     pw1=$(wt --title "ROOT PASSWORD" --passwordbox "Set the root password, required for root SSH access\nLeave blank for automatic console login" "$pw1") || return
     if [ -z "$pw1" ]; then
-      PW=""
+      ROOT_PASSWORD=""
       return 0
     fi
     # Already confirmed
-    if [ "$PW" == "-password $pw1" ]; then
+    if [ "$ROOT_PASSWORD" == "$pw1" ]; then
       return 0
     fi
     if [[ "$pw1" == *" "* ]]; then
@@ -423,7 +416,7 @@ step_password() {
     # Back from the confirmation asks the password again
     pw2=$(wt --title "ROOT PASSWORD" --passwordbox "Confirm the root password") || { [ $? -eq 1 ] && continue; return 255; }
     if [ "$pw1" == "$pw2" ]; then
-      PW="-password $pw1"
+      ROOT_PASSWORD="$pw1"
       return 0
     fi
     wt --title "ROOT PASSWORD" --msgbox "Passwords do not match. Please try again."
@@ -432,13 +425,13 @@ step_password() {
 
 # Root SSH access needs a password
 step_ssh() {
-  if [[ "$PW" != -password* ]]; then
-    SSH="no"
+  if [ -z "$ROOT_PASSWORD" ]; then
+    ROOT_SSH="no"
     return 2
   fi
   local ssh
-  ssh=$(wt --title "ROOT SSH ACCESS" --notags --default-item "${SSH:-no}" --menu "Enable root SSH access?" "yes" "Yes" "no" "No") || return
-  SSH="$ssh"
+  ssh=$(wt --title "ROOT SSH ACCESS" --notags --default-item "${ROOT_SSH:-no}" --menu "Enable root SSH access?" "yes" "Yes" "no" "No") || return
+  ROOT_SSH="$ssh"
 }
 
 # Shown only when there are several
@@ -504,65 +497,62 @@ step_ram() {
 
 step_bridge() {
   if [ ${#BRIDGE_NAMES[@]} -eq 1 ]; then
-    BRG="${BRIDGE_NAMES[0]}"
+    BRIDGE="${BRIDGE_NAMES[0]}"
     return 2
   fi
   local menu=() bridge i
   for i in "${!BRIDGE_NAMES[@]}"; do
     menu+=("${BRIDGE_NAMES[i]}" "${BRIDGE_TYPES[i]}")
   done
-  bridge=$(wt --title "BRIDGE" --default-item "${BRG:-vmbr0}" --menu "Choose the network bridge" "${menu[@]}") || return
-  BRG="$bridge"
+  bridge=$(wt --title "BRIDGE" --default-item "${BRIDGE:-vmbr0}" --menu "Choose the network bridge" "${menu[@]}") || return
+  BRIDGE="$bridge"
 }
 
 step_ipv4() {
-  local net="${NET:-dhcp}"
+  local ip="${IPV4:-dhcp}"
   while true; do
-    net=$(wt --title "IPv4 ADDRESS" --inputbox "Set a static IPv4 address, e.g. 192.168.1.50/24\nKeep dhcp for automatic addressing" "$net") || return
-    net="${net:-dhcp}"
-    [ "$net" == "dhcp" ] && break
-    is_ipv4 "${net%/*}" && [[ "$net" =~ /([0-9]|[12][0-9]|3[0-2])$ ]] && break
-    wt --title "IPv4 ADDRESS" --msgbox "Invalid IPv4 address: $net\nUse the format 192.168.1.50/24, or dhcp"
+    ip=$(wt --title "IPv4 ADDRESS" --inputbox "Set a static IPv4 address, e.g. 192.168.1.50/24\nKeep dhcp for automatic addressing" "$ip") || return
+    ip="${ip:-dhcp}"
+    [ "$ip" == "dhcp" ] && break
+    is_ipv4 "${ip%/*}" && [[ "$ip" =~ /([0-9]|[12][0-9]|3[0-2])$ ]] && break
+    wt --title "IPv4 ADDRESS" --msgbox "Invalid IPv4 address: $ip\nUse the format 192.168.1.50/24, or dhcp"
   done
-  NET="$net"
+  IPV4="$ip"
 }
 
-# GATE1 is kept with dhcp, so switching back finds it again
+# GATEWAY is kept with dhcp, so switching back finds it again
 step_gateway() {
-  if [ "$NET" == "dhcp" ]; then
-    GATE=""
+  if [ "$IPV4" == "dhcp" ]; then
     return 2
   fi
-  local gate="${GATE1:-}"
+  local gateway="$GATEWAY"
   while true; do
-    gate=$(wt --title "GATEWAY" --inputbox "Set the gateway IPv4 address, e.g. 192.168.1.1" "$gate") || return
-    is_ipv4 "$gate" && break
-    wt --title "GATEWAY" --msgbox "Invalid gateway address: $gate\nUse the format 192.168.1.1"
+    gateway=$(wt --title "GATEWAY" --inputbox "Set the gateway IPv4 address, e.g. 192.168.1.1" "$gateway") || return
+    is_ipv4 "$gateway" && break
+    wt --title "GATEWAY" --msgbox "Invalid gateway address: $gateway\nUse the format 192.168.1.1"
   done
-  GATE1="$gate"
-  GATE=",gw=$GATE1"
+  GATEWAY="$gateway"
 }
 
 step_ipv6() {
   local disable
-  disable=$(wt --title "IPv6" --notags --default-item "${DISABLEIP6:-no}" --menu "Disable IPv6?" "yes" "Yes" "no" "No") || return
-  DISABLEIP6="$disable"
+  disable=$(wt --title "IPv6" --notags --default-item "${DISABLE_IPV6:-no}" --menu "Disable IPv6?" "yes" "Yes" "no" "No") || return
+  DISABLE_IPV6="$disable"
 }
 
 step_vlan() {
-  local vlan="${VLAN1:-}"
+  local vlan="$VLAN"
   while true; do
     vlan=$(wt --title "VLAN" --inputbox "Set the VLAN tag\nLeave blank for none" "$vlan") || return
     [ -z "$vlan" ] && break
     is_number_in 1 4094 "$vlan" && break
     wt --title "VLAN" --msgbox "Invalid VLAN tag: $vlan\nUse a number from 1 to 4094, or leave blank"
   done
-  VLAN1="$vlan"
-  VLAN="${VLAN1:+,tag=$VLAN1}"
+  VLAN="$vlan"
 }
 
 step_mac() {
-  local mac="${MAC1:-}"
+  local mac="$MAC"
   while true; do
     mac=$(wt --title "MAC ADDRESS" --inputbox "Set the MAC address\nLeave blank for a generated one" "$mac") || return
     [ -z "$mac" ] && break
@@ -570,57 +560,51 @@ step_mac() {
     [[ "$mac" =~ ^[a-fA-F0-9][02468aceACE](:[a-fA-F0-9]{2}){5}$ ]] && break
     wt --title "MAC ADDRESS" --msgbox "Invalid MAC address: $mac\nUse a unicast MAC, e.g. 02:00:00:00:00:01"
   done
-  MAC1="$mac"
-  MAC="${MAC1:+,hwaddr=$MAC1}"
+  MAC="$mac"
 }
 
 step_mtu() {
-  local mtu="${MTU1:-}"
+  local mtu="$MTU"
   while true; do
     mtu=$(wt --title "MTU" --inputbox "Set the interface MTU size\nLeave blank for default" "$mtu") || return
     [ -z "$mtu" ] && break
     is_number_in 64 65535 "$mtu" && break
     wt --title "MTU" --msgbox "Invalid MTU size: $mtu\nUse a number from 64 to 65535, or leave blank"
   done
-  MTU1="$mtu"
-  MTU="${MTU1:+,mtu=$MTU1}"
+  MTU="$mtu"
 }
 
 step_dns_server() {
-  local nx
-  nx=$(wt --title "DNS SERVER" --inputbox "Set the DNS server IP address\nLeave blank to use the host's" "${NX:-}") || return
-  NX="$nx"
-  NS="${NX:+-nameserver=$NX}"
+  local server
+  server=$(wt --title "DNS SERVER" --inputbox "Set the DNS server IP address\nLeave blank to use the host's" "$DNS_SERVER") || return
+  DNS_SERVER="$server"
 }
 
 step_search_domain() {
-  local sx
-  sx=$(wt --title "DNS SEARCH DOMAIN" --inputbox "Set the DNS search domain\nLeave blank to use the host's" "${SX:-}") || return
-  SX="$sx"
-  SD="${SX:+-searchdomain=$SX}"
+  local domain
+  domain=$(wt --title "DNS SEARCH DOMAIN" --inputbox "Set the DNS search domain\nLeave blank to use the host's" "$SEARCH_DOMAIN") || return
+  SEARCH_DOMAIN="$domain"
 }
 
 step_apt_cacher() {
   if [ "$var_os" == "alpine" ]; then
     APT_CACHER=""
-    APT_CACHER_IP=""
     return 2
   fi
-  local cacher="${APT_CACHER_IP:-}"
+  local cacher="$APT_CACHER"
   while true; do
     cacher=$(wt --title "APT-CACHER" --inputbox "Set the APT-Cacher IP address\nLeave blank to not use one" "$cacher") || return
     [ -z "$cacher" ] && break
     is_dns_name "$cacher" && break
     wt --title "APT-CACHER" --msgbox "Invalid APT-Cacher address: $cacher\nUse an IP address or a host name"
   done
-  APT_CACHER_IP="$cacher"
-  APT_CACHER="${APT_CACHER_IP:+yes}"
+  APT_CACHER="$cacher"
 }
 
 step_verbose() {
-  local verb
-  verb=$(wt --title "VERBOSE MODE" --notags --default-item "${VERB:-no}" --menu "Enable verbose mode?" "yes" "Yes" "no" "No") || return
-  VERB="$verb"
+  local verbose
+  verbose=$(wt --title "VERBOSE MODE" --notags --default-item "${VERBOSE:-no}" --menu "Enable verbose mode?" "yes" "Yes" "no" "No") || return
+  VERBOSE="$verbose"
 }
 
 step_confirm() {
@@ -662,30 +646,30 @@ settings_summary() {
   echo "Distribution: $var_os"
   echo "${var_os^} version: $var_version"
   echo "Container ID: $CT_ID"
-  echo "Hostname: $HN"
-  echo "Container type: $([ "$CT_TYPE" == "1" ] && echo Unprivileged || echo Privileged)"
-  echo "Root password: $([ -n "$PW" ] && echo "********" || echo "automatic console login")"
-  echo "Root SSH access: $([ "$SSH" == "yes" ] && echo enabled || echo disabled)"
+  echo "Hostname: $CT_HOSTNAME"
+  echo "Container type: $([ "$UNPRIVILEGED" == "1" ] && echo Unprivileged || echo Privileged)"
+  echo "Root password: $([ -n "$ROOT_PASSWORD" ] && echo "********" || echo "automatic console login")"
+  echo "Root SSH access: $([ "$ROOT_SSH" == "yes" ] && echo enabled || echo disabled)"
   echo "Template storage: $TEMPLATE_STORAGE"
   echo "Container storage: $CONTAINER_STORAGE"
   echo "Disk size: $DISK_SIZE GiB"
   echo "CPU cores: $CORE_COUNT"
   echo "RAM size: $RAM_SIZE MiB"
-  echo "Bridge: $BRG"
-  echo "IPv4 address: $NET"
-  if [ "$NET" != "dhcp" ]; then
-    echo "Gateway: $GATE1"
+  echo "Bridge: $BRIDGE"
+  echo "IPv4 address: $IPV4"
+  if [ "$IPV4" != "dhcp" ]; then
+    echo "Gateway: $GATEWAY"
   fi
-  echo "IPv6: $([ "$DISABLEIP6" == "yes" ] && echo disabled || echo enabled)"
-  echo "VLAN: ${VLAN1:-none}"
-  echo "MAC address: ${MAC1:-generated}"
-  echo "MTU: ${MTU1:-default}"
-  echo "DNS server: ${NX:-same as host}"
-  echo "DNS search domain: ${SX:-same as host}"
+  echo "IPv6: $([ "$DISABLE_IPV6" == "yes" ] && echo disabled || echo enabled)"
+  echo "VLAN: ${VLAN:-none}"
+  echo "MAC address: ${MAC:-generated}"
+  echo "MTU: ${MTU:-default}"
+  echo "DNS server: ${DNS_SERVER:-same as host}"
+  echo "DNS search domain: ${SEARCH_DOMAIN:-same as host}"
   if [ "$var_os" != "alpine" ]; then
-    echo "APT-Cacher: ${APT_CACHER_IP:-none}"
+    echo "APT-Cacher: ${APT_CACHER:-none}"
   fi
-  echo "Verbose mode: $([ "$VERB" == "yes" ] && echo enabled || echo disabled)"
+  echo "Verbose mode: $([ "$VERBOSE" == "yes" ] && echo enabled || echo disabled)"
   # App-specific lines, optionally defined by ct/<app>.sh
   if declare -F app_summary >/dev/null; then
     app_summary
@@ -715,11 +699,11 @@ install_script() {
   # timedatectl is more reliable than /etc/timezone on newer systemd-based
   # hosts (e.g. Debian 13); fall back to /etc/timezone for older systems
   if command -v timedatectl >/dev/null 2>&1; then
-    timezone=$(timedatectl show --value --property=Timezone 2>/dev/null || echo "UTC")
+    TIMEZONE=$(timedatectl show --value --property=Timezone 2>/dev/null || echo "UTC")
   elif [ -f /etc/timezone ]; then
-    timezone=$(cat /etc/timezone)
+    TIMEZONE=$(cat /etc/timezone)
   else
-    timezone="UTC"
+    TIMEZONE="UTC"
   fi
   host_lists
   # Every setting gets a value before any window, advanced_settings prefills from them
@@ -789,19 +773,17 @@ create_container() {
   fi
 
   msg_info "Creating LXC Container"
-  # PCT_OPTIONS is left unquoted on purpose: it holds several options to split
-  if ! pct create "$CTID" "${TEMPLATE_STORAGE}:vztmpl/${template}" $PCT_OPTIONS -rootfs "$CONTAINER_STORAGE:$DISK_SIZE" >/dev/null; then
+  if ! pct create "$CT_ID" "${TEMPLATE_STORAGE}:vztmpl/${template}" "${PCT_OPTIONS[@]}" -rootfs "$CONTAINER_STORAGE:$DISK_SIZE" >/dev/null; then
     msg_error "A problem occurred while trying to create the container."
     exit 1
   fi
-  msg_ok "LXC Container ${BL}$CTID${CL} ${GN}was successfully created."
+  msg_ok "LXC Container ${BL}$CT_ID${CL} ${GN}was successfully created."
 }
 
-# This function collects user settings and integrates all the collected information.
+# Creates and starts the container, then runs install/<app>-install.sh inside it
 build_container() {
-#  if [ "$VERB" == "yes" ]; then set -x; fi
-
-  if [ "$CT_TYPE" == "1" ]; then
+  local net0
+  if [ "$UNPRIVILEGED" == "1" ]; then
     FEATURES="keyctl=1,nesting=1"
   else
     FEATURES="nesting=1"
@@ -814,34 +796,37 @@ build_container() {
   else
     export FUNCTIONS_FILE_PATH="$(curl -s https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/install.func)"
   fi
-  export CACHER="$APT_CACHER"
-  export CACHER_IP="$APT_CACHER_IP"
-  export tz="$timezone"
-  export DISABLEIPV6="$DISABLEIP6"
-  export APPLICATION="$APP"
-  export app="$NSAPP"
-  export PASSWORD="$PW"
-  export VERBOSE="$VERB"
-  export SSH_ROOT="${SSH}"
-  export CTID="$CT_ID"
-  export CTTYPE="$CT_TYPE"
-  PCT_OPTIONS="
-    -features $FEATURES
-    -hostname $HN
+  # Read by install.func inside the container
+  export APP APP_SLUG TIMEZONE ROOT_PASSWORD ROOT_SSH DISABLE_IPV6 APT_CACHER VERBOSE
+
+  net0="name=eth0,bridge=$BRIDGE,ip=$IPV4"
+  if [ "$IPV4" != "dhcp" ]; then
+    net0+=",gw=$GATEWAY"
+  fi
+  net0+="${MAC:+,hwaddr=$MAC}${VLAN:+,tag=$VLAN}${MTU:+,mtu=$MTU}"
+  PCT_OPTIONS=(
+    -features "$FEATURES"
+    -hostname "$CT_HOSTNAME"
     -tags salvialf-pve-scripts
-    $SD
-    $NS
-    -net0 name=eth0,bridge=$BRG$MAC,ip=$NET$GATE$VLAN$MTU
+    -net0 "$net0"
     -onboot 1
-    -cores $CORE_COUNT
-    -memory $RAM_SIZE
-    -unprivileged $CT_TYPE
-    $PW
-  "
+    -cores "$CORE_COUNT"
+    -memory "$RAM_SIZE"
+    -unprivileged "$UNPRIVILEGED"
+  )
+  if [ -n "$DNS_SERVER" ]; then
+    PCT_OPTIONS+=(-nameserver "$DNS_SERVER")
+  fi
+  if [ -n "$SEARCH_DOMAIN" ]; then
+    PCT_OPTIONS+=(-searchdomain "$SEARCH_DOMAIN")
+  fi
+  if [ -n "$ROOT_PASSWORD" ]; then
+    PCT_OPTIONS+=(-password "$ROOT_PASSWORD")
+  fi
   create_container
 
-  LXC_CONFIG=/etc/pve/lxc/${CTID}.conf
-  if [ "$CT_TYPE" == "0" ]; then
+  LXC_CONFIG=/etc/pve/lxc/${CT_ID}.conf
+  if [ "$UNPRIVILEGED" == "0" ]; then
     cat <<EOF >>$LXC_CONFIG
 # USB passthrough
 lxc.cgroup2.devices.allow: a
@@ -856,7 +841,7 @@ lxc.mount.entry: /dev/ttyACM1       dev/ttyACM1       none bind,optional,create=
 EOF
   fi
 
-  if [ "$CT_TYPE" == "0" ]; then
+  if [ "$UNPRIVILEGED" == "0" ]; then
     if [[ "$APP" == "Channels" || "$APP" == "Emby" || "$APP" == "ErsatzTV" || "$APP" == "Frigate" || "$APP" == "Jellyfin" || "$APP" == "Plex" || "$APP" == "Scrypted" || "$APP" == "Tdarr" || "$APP" == "Unmanic" || "$APP" == "Ollama" ]]; then
       cat <<EOF >>$LXC_CONFIG
 # VAAPI hardware transcoding
@@ -888,39 +873,37 @@ EOF
     fi
   fi
 
-  # This starts the container and executes <app>-install.sh
   msg_info "Starting LXC Container"
-  pct start "$CTID"
+  pct start "$CT_ID"
   msg_ok "Started LXC Container"
   # Fix Debian 13 LXC template bug where / is owned by nobody:nogroup
   # (must be done from the host, an unprivileged container cannot chown /)
-  ROOTFS_MP="/var/lib/lxc/$CTID/rootfs"
+  ROOTFS_MP="/var/lib/lxc/$CT_ID/rootfs"
   if [ -d "$ROOTFS_MP" ] && [ "$(stat -c '%U' "$ROOTFS_MP")" != "root" ]; then
     chown root:root "$ROOTFS_MP" 2>/dev/null || true
   fi
   if [ "$var_os" == "alpine" ]; then
     sleep 3
-        pct exec "$CTID" -- /bin/sh -c 'cat <<EOF >/etc/apk/repositories
+        pct exec "$CT_ID" -- /bin/sh -c 'cat <<EOF >/etc/apk/repositories
 http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
 http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
 #http://dl-cdn.alpinelinux.org/alpine/v3.19/main
 #http://dl-cdn.alpinelinux.org/alpine/v3.19/community
 EOF'
-    pct exec "$CTID" -- ash -c "apk add bash >/dev/null"
+    pct exec "$CT_ID" -- ash -c "apk add bash >/dev/null"
   fi
-  lxc-attach -n "$CTID" -- bash -c "$(wget -qLO - https://raw.githubusercontent.com/Salvialf/pve-scripts/main/install/${NSAPP}-install.sh)" || exit
+  lxc-attach -n "$CT_ID" -- bash -c "$(wget -qLO - https://raw.githubusercontent.com/Salvialf/pve-scripts/main/install/${APP_SLUG}-install.sh)" || exit
 
 }
 
 get_ip() {
-  pct exec "$CTID" ip a s dev eth0 | awk '/inet / {print $2}' | cut -d/ -f1
+  pct exec "$CT_ID" ip a s dev eth0 | awk '/inet / {print $2}' | cut -d/ -f1
 }
 
-# This function sets the description of the container.
 description() {
   : # no-op: everything below is commented out for now
   # tteck's original also set a logo + Ko-fi link here, text not decided yet
-  # pct set "$CTID" -description "<div align='center'><a href='https://Helper-Scripts.com' target='_blank' rel='noopener noreferrer'><img src='https://raw.githubusercontent.com/tteck/Proxmox/main/misc/images/logo-81x112.png'/></a>
+  # pct set "$CT_ID" -description "<div align='center'><a href='https://Helper-Scripts.com' target='_blank' rel='noopener noreferrer'><img src='https://raw.githubusercontent.com/tteck/Proxmox/main/misc/images/logo-81x112.png'/></a>
   #
   # # ${APP} LXC
   #
