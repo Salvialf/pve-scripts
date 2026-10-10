@@ -3,8 +3,7 @@
 # Copyright (c) 2021-2025 community-scripts ORG
 # Author: Mips2648
 # Modified by: Salvialf
-# License: MIT
-# https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
+# License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 # Source: https://jeedom.com/
 
 source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"

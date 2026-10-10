@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2021-2024 tteck
+# Copyright (c) 2026 Salvialf
+# Author: tteck (tteckster) | Salvialf
+# License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
 # Disk, CPU, RAM and OS come from the ct script's var_* variables
 default_settings() {

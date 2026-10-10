@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2021-2024 tteck
+# Author: tteck (tteckster)
+# Modified by: Salvialf
+# License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
 # Verbose mode ($STD before a command hides its output unless verbose) and the IPv6 setting
 verb_ip6() {
