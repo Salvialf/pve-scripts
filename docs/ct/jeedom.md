@@ -22,6 +22,7 @@ At the end, the script shows the URL of the Jeedom interface. The default login 
 | Disk | 16 GiB |
 | Network | DHCP on `vmbr0` |
 | Container | Unprivileged, starts at boot, root autologin on the console |
+| Devices | TUN |
 | Jeedom branch | `master` |
 
 > [!NOTE]
@@ -44,13 +45,11 @@ JEEDOM_BRANCH="develop" bash -c "$(curl -fsSL https://raw.githubusercontent.com/
 
 The script checks that the branch exists before creating anything.
 
-## Jeedom DNS service
+## TUN device
 
-To use Jeedom's DNS service in an unprivileged container, add this line to the container's configuration on the host (`/etc/pve/lxc/<CTID>.conf`), then restart the container:
+Jeedom's DNS service and Matter plugin need the TUN device. The container gets it by default (Devices category of the settings menu).
 
-```
-lxc.mount.entry: /dev/net dev/net none bind,create=dir
-```
+For a container created without it, run the [TUN device tool](../tools/lxc-tun.md) on the host.
 
 ## Update
 

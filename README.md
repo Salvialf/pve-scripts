@@ -19,7 +19,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/mai
 The script creates the container, then installs the app inside it. Before creating anything, a settings menu shows the app's recommended settings, grouped by category:
 
 - **Create** right away to use them as they are.
-- Open a category (General, Access, Resources, Network, DNS, Options, plus the app's own settings when it has any) to change only what you need, then come back to the menu.
+- Open a category (General, Access, Resources, Network, DNS, Options, Devices, plus the app's own settings when it has any) to change only what you need, then come back to the menu.
 
 To update an existing container, run `update` from its console. Each app page says what it updates.
 
@@ -31,6 +31,14 @@ As with any script found online, read it before running it on your host.
 |---|---|
 | [Debian](docs/ct/debian.md) | Minimal Debian container |
 | [Jeedom](docs/ct/jeedom.md) | Jeedom home automation software |
+
+## Tools
+
+To run in the Proxmox VE Shell, on existing containers.
+
+| Tool | Description |
+|---|---|
+| [TUN device](docs/tools/lxc-tun.md) | Gives a container the host's TUN device (VPNs and other network tunnels) |
 
 ## Background
 

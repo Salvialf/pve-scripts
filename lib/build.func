@@ -33,6 +33,7 @@ default_settings() {
   VLAN=""
   ROOT_SSH="no"
   ONBOOT="${var_onboot:-no}"
+  TUN="${var_tun:-no}"
   VERBOSE="no"
   # The ct script's app_settings values, if any
   if declare -F app_default_settings >/dev/null; then
@@ -503,6 +504,28 @@ summary_options() {
   echo "${list:-none}"
 }
 
+step_tun() {
+  local tun text="Give the container the TUN device?\nNeeded by VPNs and other network tunnels"
+  if [ -n "${var_tun_note:-}" ]; then
+    text+="\n$var_tun_note"
+  fi
+  tun=$(wt --title "TUN DEVICE" --notags --default-item "${TUN:-no}" --menu "$text" "yes" "Yes" "no" "No") || return
+  TUN="$tun"
+}
+
+settings_devices() {
+  run_steps step_tun
+}
+
+summary_devices() {
+  local parts=() list
+  if [ "$TUN" == "yes" ]; then
+    parts+=("TUN")
+  fi
+  list=$(join_list "${parts[@]}")
+  echo "${list:-none}"
+}
+
 settings_app() {
   run_steps "${app_settings[@]}"
 }
@@ -556,6 +579,7 @@ settings_menu() {
       "network" "$(menu_line Network "$(summary_network)")"
       "dns" "$(menu_line DNS "$(summary_dns)")"
       "options" "$(menu_line Options "$(summary_options)")"
+      "devices" "$(menu_line Devices "$(summary_devices)")"
     )
     if [ -n "${app_settings[*]:-}" ]; then
       menu+=("app" "$(menu_line "$APP" "$(summary_app)")")
@@ -574,6 +598,7 @@ settings_menu() {
       network) settings_network || true ;;
       dns) settings_dns || true ;;
       options) settings_options || true ;;
+      devices) settings_devices || true ;;
       app) settings_app || true ;;
     esac
   done
@@ -609,6 +634,7 @@ settings_summary() {
     echo "APT-Cacher: ${APT_CACHER:-none}"
   fi
   echo "Verbose mode: $([ "$VERBOSE" == "yes" ] && echo enabled || echo disabled)"
+  echo "Devices: $(summary_devices)"
   # App-specific lines, optionally defined by ct/<app>.sh
   if declare -F app_summary >/dev/null; then
     app_summary
@@ -693,7 +719,7 @@ create_container() {
 
 # Creates and starts the container, then runs install/<app>-install.sh inside it
 build_container() {
-  local net0 install_func
+  local net0 install_func tun_tool
   if [ "$UNPRIVILEGED" == "1" ]; then
     FEATURES="keyctl=1,nesting=1"
   else
@@ -740,6 +766,14 @@ build_container() {
     PCT_OPTIONS+=(-password "$ROOT_PASSWORD")
   fi
   create_container
+
+  if [ "$TUN" == "yes" ]; then
+    tun_tool=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/tools/lxc-tun.sh) || {
+      msg_error "Unable to download lxc-tun.sh"
+      exit 1
+    }
+    CT_ID="$CT_ID" bash -c "$tun_tool"
+  fi
 
   LXC_CONFIG=/etc/pve/lxc/${CT_ID}.conf
   if [ "$UNPRIVILEGED" == "0" ]; then
