@@ -16,10 +16,10 @@ Each app page gives the command to run in the Proxmox VE Shell, for example:
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/ct/debian.sh)"
 ```
 
-The script creates the container, then installs the app inside it. Two modes are offered:
+The script creates the container, then installs the app inside it. Before creating anything, a settings menu shows the app's recommended settings, grouped by category:
 
-- **Default settings**: the app's recommended settings, no further questions.
-- **Advanced settings**: choose each setting (container ID, resources, network, root password...), plus the app's own options when it has any.
+- **Create** right away to use them as they are.
+- Open a category (General, Access, Resources, Network, DNS, Options, plus the app's own settings when it has any) to change only what you need, then come back to the menu.
 
 To update an existing container, run `update` from its console. Each app page says what it updates.
 

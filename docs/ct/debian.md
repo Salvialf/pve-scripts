@@ -22,7 +22,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/mai
 | Container | Unprivileged, root autologin on the console |
 
 > [!NOTE]
-> Debian 13 is available in the advanced settings.
+> Debian 13 is available in the General settings.
 > `curl` and `sudo` are installed on top of the Debian template.
 
 ## Update

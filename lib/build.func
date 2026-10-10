@@ -6,11 +6,15 @@
 
 # Disk, CPU, RAM and OS come from the ct script's var_* variables
 default_settings() {
-  # Reset to the ct script's values, which the advanced steps change
-  DEFAULT_OS="${DEFAULT_OS:-$var_os}"
-  DEFAULT_VERSION="${DEFAULT_VERSION:-$var_version}"
-  var_os="$DEFAULT_OS"
-  var_version="$DEFAULT_VERSION"
+  DEFAULT_TEMPLATE_STORAGE=$(awk 'NR == 1 {print $1}' <<< "$TEMPLATE_STORAGE_LIST")
+  TEMPLATE_STORAGE="$DEFAULT_TEMPLATE_STORAGE"
+  CONTAINER_STORAGE=$(awk 'NR == 1 {print $1}' <<< "$CONTAINER_STORAGE_LIST")
+  CONTAINER_STORAGE_FREE=$(storage_free "$CONTAINER_STORAGE")
+  DEFAULT_BRIDGE="${BRIDGE_NAMES[0]}"
+  if [[ " ${BRIDGE_NAMES[*]} " == *" vmbr0 "* ]]; then
+    DEFAULT_BRIDGE="vmbr0"
+  fi
+  BRIDGE="$DEFAULT_BRIDGE"
   UNPRIVILEGED="1"
   ROOT_PASSWORD=""
   CT_ID=$NEXTID
@@ -54,6 +58,18 @@ is_dns_name() {
 # pvesm sizes are in KiB
 kib_to_gib() {
   awk -v kib="$1" 'BEGIN {printf "%.2f", kib / 1048576}'
+}
+
+# Free space of a container storage, in KiB
+storage_free() {
+  awk -v storage="$1" '$1 == storage {print $6}' <<< "$CONTAINER_STORAGE_LIST"
+}
+
+# Prints the arguments separated by commas, nothing without arguments
+join_list() {
+  local list
+  list=$(printf '%s, ' "$@")
+  echo "${list%, }"
 }
 
 # Prints the storage to use, asking only when there are several
@@ -175,6 +191,14 @@ step_ct_type() {
   UNPRIVILEGED="$unprivileged"
 }
 
+settings_general() {
+  run_steps step_distribution step_version step_ct_id step_hostname step_ct_type
+}
+
+summary_general() {
+  echo "${var_os^} $var_version, CT $CT_ID, $CT_HOSTNAME, $([ "$UNPRIVILEGED" == "1" ] && echo unprivileged || echo privileged)"
+}
+
 step_password() {
   local pw1="$ROOT_PASSWORD" pw2
   while true; do
@@ -217,6 +241,18 @@ step_ssh() {
   ROOT_SSH="$ssh"
 }
 
+settings_access() {
+  run_steps step_password step_ssh
+}
+
+summary_access() {
+  if [ -z "$ROOT_PASSWORD" ]; then
+    echo "console autologin"
+  else
+    echo "root password, SSH $([ "$ROOT_SSH" == "yes" ] && echo on || echo off)"
+  fi
+}
+
 # Shown only when there are several
 step_template_storage() {
   local storage
@@ -230,7 +266,7 @@ step_container_storage() {
   local storage
   storage=$(select_storage "$CONTAINER_STORAGE_LIST" "CONTAINER STORAGE" "Choose the storage for the container disk" "${CONTAINER_STORAGE:-}") || return
   CONTAINER_STORAGE="$storage"
-  CONTAINER_STORAGE_FREE=$(awk -v storage="$storage" '$1 == storage {print $6}' <<< "$CONTAINER_STORAGE_LIST")
+  CONTAINER_STORAGE_FREE=$(storage_free "$storage")
   [ "$(wc -l <<< "$CONTAINER_STORAGE_LIST")" -gt 1 ] || return 2
 }
 
@@ -248,12 +284,6 @@ step_disk_size() {
     disk_space_warning "$size" && break
   done
   DISK_SIZE="$size"
-}
-
-# Default mode only, where the disk size isn't asked: No goes back
-step_disk_space() {
-  disk_fits "$DISK_SIZE" && return 2
-  disk_space_warning "$DISK_SIZE"
 }
 
 step_cpu() {
@@ -276,6 +306,18 @@ step_ram() {
     wt --title "RAM" --msgbox "Invalid RAM size: $ram\nUse a whole number of MiB, 16 or more"
   done
   RAM_SIZE="$ram"
+}
+
+settings_resources() {
+  run_steps step_template_storage step_container_storage step_disk_size step_cpu step_ram
+}
+
+summary_resources() {
+  local parts=("$DISK_SIZE GiB on $CONTAINER_STORAGE" "$CORE_COUNT CPU" "$RAM_SIZE MiB")
+  if [ "$TEMPLATE_STORAGE" != "$DEFAULT_TEMPLATE_STORAGE" ]; then
+    parts+=("template on $TEMPLATE_STORAGE")
+  fi
+  join_list "${parts[@]}"
 }
 
 step_bridge() {
@@ -359,6 +401,33 @@ step_mtu() {
   MTU="$mtu"
 }
 
+settings_network() {
+  run_steps step_bridge step_ipv4 step_gateway step_ipv6 step_vlan step_mac step_mtu
+}
+
+summary_network() {
+  local parts=()
+  if [ "$BRIDGE" != "$DEFAULT_BRIDGE" ]; then
+    parts+=("$BRIDGE")
+  fi
+  if [ "$IPV4" == "dhcp" ]; then
+    parts+=("dhcp")
+  else
+    parts+=("$IPV4 via $GATEWAY")
+  fi
+  parts+=("IPv6 $([ "$DISABLE_IPV6" == "yes" ] && echo off || echo on)")
+  if [ -n "$VLAN" ]; then
+    parts+=("VLAN $VLAN")
+  fi
+  if [ -n "$MAC" ]; then
+    parts+=("MAC $MAC")
+  fi
+  if [ -n "$MTU" ]; then
+    parts+=("MTU $MTU")
+  fi
+  join_list "${parts[@]}"
+}
+
 step_dns_server() {
   local server
   server=$(wt --title "DNS SERVER" --inputbox "Set the DNS server IP address\nLeave blank to use the host's" "$DNS_SERVER") || return
@@ -369,6 +438,22 @@ step_search_domain() {
   local domain
   domain=$(wt --title "DNS SEARCH DOMAIN" --inputbox "Set the DNS search domain\nLeave blank to use the host's" "$SEARCH_DOMAIN") || return
   SEARCH_DOMAIN="$domain"
+}
+
+settings_dns() {
+  run_steps step_dns_server step_search_domain
+}
+
+summary_dns() {
+  local parts=() list
+  if [ -n "$DNS_SERVER" ]; then
+    parts+=("$DNS_SERVER")
+  fi
+  if [ -n "$SEARCH_DOMAIN" ]; then
+    parts+=("$SEARCH_DOMAIN")
+  fi
+  list=$(join_list "${parts[@]}")
+  echo "${list:-same as host}"
 }
 
 step_apt_cacher() {
@@ -392,8 +477,33 @@ step_verbose() {
   VERBOSE="$verbose"
 }
 
-step_confirm() {
-  wt --title "CONFIRMATION" --yes-button Create --no-button Back --yesno "Ready to create the ${APP} LXC?\n\n$(settings_summary)"
+settings_options() {
+  run_steps step_apt_cacher step_verbose
+}
+
+summary_options() {
+  local parts=() list
+  if [ -n "$APT_CACHER" ]; then
+    parts+=("APT-Cacher $APT_CACHER")
+  fi
+  if [ "$VERBOSE" == "yes" ]; then
+    parts+=("verbose")
+  fi
+  list=$(join_list "${parts[@]}")
+  echo "${list:-none}"
+}
+
+settings_app() {
+  run_steps "${app_settings[@]}"
+}
+
+# The values of the ct script's app_summary lines
+summary_app() {
+  local values=() line
+  while IFS= read -r line; do
+    values+=("${line#*: }")
+  done <<< "$(app_summary)"
+  join_list "${values[@]}"
 }
 
 # Runs the given steps: Next goes on, Back returns to the previous shown step, ESC exits
@@ -417,13 +527,46 @@ run_steps() {
   done
 }
 
-advanced_settings() {
-  run_steps step_distribution step_version step_ct_id step_hostname \
-    step_ct_type step_password step_ssh \
-    step_template_storage step_container_storage step_disk_size step_cpu step_ram \
-    step_bridge step_ipv4 step_gateway step_ipv6 step_vlan step_mac step_mtu \
-    step_dns_server step_search_domain \
-    step_apt_cacher step_verbose "${app_settings[@]}" step_confirm
+# Category name, then its summary
+menu_line() {
+  printf '%-11s %s' "$1" "$2"
+}
+
+# Every category with its current values: Create goes on, a category runs its steps then comes back here
+settings_menu() {
+  local menu choice
+  while true; do
+    # The shell shows between two windows, keep it blank
+    clear
+    menu=(
+      "create" ">> Create the ${APP} LXC"
+      "general" "$(menu_line General "$(summary_general)")"
+      "access" "$(menu_line Access "$(summary_access)")"
+      "resources" "$(menu_line Resources "$(summary_resources)")"
+      "network" "$(menu_line Network "$(summary_network)")"
+      "dns" "$(menu_line DNS "$(summary_dns)")"
+      "options" "$(menu_line Options "$(summary_options)")"
+    )
+    if [ -n "${app_settings[*]:-}" ]; then
+      menu+=("app" "$(menu_line "$APP" "$(summary_app)")")
+    fi
+    choice=$(wt --title "SETTINGS" --notags --ok-button Select --cancel-button Exit \
+      --menu "Create the container, or choose what to change" "${menu[@]}") || exit-script
+    # Back from the first step of a category returns 1: this menu shows again
+    case "$choice" in
+      create)
+        if disk_fits "$DISK_SIZE" || disk_space_warning "$DISK_SIZE"; then
+          return
+        fi ;;
+      general) settings_general || true ;;
+      access) settings_access || true ;;
+      resources) settings_resources || true ;;
+      network) settings_network || true ;;
+      dns) settings_dns || true ;;
+      options) settings_options || true ;;
+      app) settings_app || true ;;
+    esac
+  done
 }
 
 # "Label: value" lines, in the steps' order
@@ -469,7 +612,6 @@ echo_settings() {
 }
 
 install_script() {
-  local rc mode
   pve_check
   shell_check
   root_check
@@ -491,29 +633,12 @@ install_script() {
     TIMEZONE="UTC"
   fi
   host_lists
-  # Every setting gets a value before any window, advanced_settings prefills from them
+  # Every setting gets a value before the menu shows them
   default_settings
-  # Going back from the first step returns here
-  while true; do
-    # The shell shows between two windows, keep it blank
-    clear
-    rc=0
-    wt --title "SETTINGS" --yesno "Use default settings?" --no-button Advanced || rc=$?
-    if [ $rc -eq 255 ]; then
-      exit-script
-    elif [ $rc -eq 0 ]; then
-      mode="default"
-      default_settings
-      run_steps step_template_storage step_container_storage step_disk_space step_bridge && break
-    else
-      mode="advanced"
-      advanced_settings && break
-    fi
-  done
+  settings_menu
   header_info
-  echo -e "${BL}Using ${mode^} Settings${CL}"
   echo_settings
-  echo -e "${BL}Creating a ${APP} LXC using the above ${mode} settings${CL}"
+  echo -e "${BL}Creating a ${APP} LXC using the above settings${CL}"
 }
 
 create_container() {

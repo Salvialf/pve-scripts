@@ -25,18 +25,18 @@ At the end, the script shows the URL of the Jeedom interface. The default login 
 | Jeedom branch | `master` |
 
 > [!NOTE]
-> Debian 13 is available in the advanced settings.
+> Debian 13 is available in the General settings.
 
 ## Jeedom branch
 
-Jeedom is installed from the `master` branch by default. The advanced settings end with a branch menu:
+Jeedom is installed from the `master` branch by default. The Jeedom category of the settings menu offers:
 
 - `master`: stable
 - `release`: pre-release
 - `develop`: development
 - Other: any other jeedom/core branch (not supported)
 
-The branch can also be passed on the command line, which works with the default settings too:
+The branch can also be passed on the command line, it then becomes the default:
 
 ```bash
 JEEDOM_BRANCH="develop" bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/ct/jeedom.sh)"

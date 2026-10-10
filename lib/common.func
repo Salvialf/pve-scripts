@@ -194,15 +194,15 @@ wt() {
     case "$1" in
       --inputbox | --yesno | --msgbox)
         box="$1"
-        args+=("$1" "$2" 0 58); shift 2 ;;
+        args+=("$1" "$2" 0 64); shift 2 ;;
       --passwordbox)
         box="$1"
         # newt's auto-size has no case for passwordbox and hides the text: 8 rows for one line, plus one per \n
         breaks="${2//\\n/}"
-        args+=("$1" "$2" $(((${#2} - ${#breaks}) / 2 + 8)) 58); shift 2 ;;
+        args+=("$1" "$2" $(((${#2} - ${#breaks}) / 2 + 8)) 64); shift 2 ;;
       --menu)
         box="$1"
-        args+=("$1" "$2" 0 58 0); shift 2
+        args+=("$1" "$2" 0 64 0); shift 2
         # A space each side of the descriptions, so the highlight doesn't stick to the text
         while [ $# -gt 0 ]; do
           args+=("$1" " $2 "); shift 2
@@ -229,7 +229,6 @@ wt() {
 start() {
   local build_func
   if command -v pveversion >/dev/null 2>&1; then
-    wt --title "CREATE CONTAINER" --yesno "This will create a new ${APP} LXC. Proceed?" || exit-script
     build_func=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/build.func) || {
       msg_error "Unable to download build.func"
       exit 1
