@@ -676,6 +676,7 @@ install_script() {
   header_info
   echo_settings
   echo -e "${BL}Creating a ${APP} LXC using the above settings${CL}"
+  msg_warn "Keep this Shell open until the end: leaving it stops the install"
 }
 
 create_container() {
