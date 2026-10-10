@@ -27,7 +27,7 @@ To update an existing container, run `update` from its console. Each app page sa
 
 As with any script found online, read it before running it on your host.
 
-## Available scripts
+## Containers
 
 | App | Description |
 |---|---|
