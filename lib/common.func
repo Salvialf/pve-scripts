@@ -10,6 +10,14 @@ variables() {
   newt_colors                                   # whiptail palette from the ct script's var_color_*
 }
 
+# Banner and palette of the tools/ scripts
+tool_variables() {
+  BACKTITLE="Salvialf PVE scripts - $1"
+  var_color_primary="color208"
+  var_color_theme="dark"
+  newt_colors
+}
+
 color() {
   YW=$(echo "\033[33m")
   BL=$(echo "\033[36m")
