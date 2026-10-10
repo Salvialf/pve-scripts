@@ -32,6 +32,7 @@ default_settings() {
   MAC=""
   VLAN=""
   ROOT_SSH="no"
+  ONBOOT="${var_onboot:-no}"
   VERBOSE="no"
   # The ct script's app_settings values, if any
   if declare -F app_default_settings >/dev/null; then
@@ -456,6 +457,12 @@ summary_dns() {
   echo "${list:-same as host}"
 }
 
+step_onboot() {
+  local onboot
+  onboot=$(wt --title "START AT BOOT" --notags --default-item "${ONBOOT:-no}" --menu "Start the container at boot?" "yes" "Yes" "no" "No") || return
+  ONBOOT="$onboot"
+}
+
 step_apt_cacher() {
   if [ "$var_os" == "alpine" ]; then
     APT_CACHER=""
@@ -478,11 +485,14 @@ step_verbose() {
 }
 
 settings_options() {
-  run_steps step_apt_cacher step_verbose
+  run_steps step_onboot step_apt_cacher step_verbose
 }
 
 summary_options() {
   local parts=() list
+  if [ "$ONBOOT" == "yes" ]; then
+    parts+=("start at boot")
+  fi
   if [ -n "$APT_CACHER" ]; then
     parts+=("APT-Cacher $APT_CACHER")
   fi
@@ -594,6 +604,7 @@ settings_summary() {
   echo "MTU: ${MTU:-default}"
   echo "DNS server: ${DNS_SERVER:-same as host}"
   echo "DNS search domain: ${SEARCH_DOMAIN:-same as host}"
+  echo "Start at boot: $([ "$ONBOOT" == "yes" ] && echo enabled || echo disabled)"
   if [ "$var_os" != "alpine" ]; then
     echo "APT-Cacher: ${APT_CACHER:-none}"
   fi
@@ -714,7 +725,7 @@ build_container() {
     -hostname "$CT_HOSTNAME"
     -tags salvialf-pve-scripts
     -net0 "$net0"
-    -onboot 1
+    -onboot "$([ "$ONBOOT" == "yes" ] && echo 1 || echo 0)"
     -cores "$CORE_COUNT"
     -memory "$RAM_SIZE"
     -unprivileged "$UNPRIVILEGED"

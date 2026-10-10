@@ -21,7 +21,7 @@ At the end, the script shows the URL of the Jeedom interface. The default login 
 | RAM | 2048 MiB |
 | Disk | 16 GiB |
 | Network | DHCP on `vmbr0` |
-| Container | Unprivileged, root autologin on the console |
+| Container | Unprivileged, starts at boot, root autologin on the console |
 | Jeedom branch | `master` |
 
 > [!NOTE]

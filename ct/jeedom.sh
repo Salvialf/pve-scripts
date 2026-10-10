@@ -27,6 +27,7 @@ var_ram="2048"
 var_os="debian"
 var_os_locked="yes"
 var_version="12"
+var_onboot="yes"
 var_color_primary="color106"
 var_color_theme="dark"
 app_settings=(step_jeedom_branch step_jeedom_other_branch)
