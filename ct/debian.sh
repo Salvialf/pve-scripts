@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-source <(curl -s https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/build.func)
+COMMON_FUNC=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/common.func) || { echo "Unable to download common.func"; exit 1; }
+source /dev/stdin <<< "$COMMON_FUNC"
 # Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
 # Modified by: Salvialf
