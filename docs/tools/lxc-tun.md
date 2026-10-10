@@ -5,9 +5,10 @@ Gives an existing container the host's TUN device (`/dev/net/tun`), needed by so
 - VPN software (OpenVPN, Tailscale...)
 - Jeedom's DNS service and Matter plugin
 
-## Usage
+> [!IMPORTANT]
+> Run the commands on this page as root in the Proxmox VE Shell. From another account, switch to root with `su -` first: the scripts refuse `sudo`.
 
-Run in the Proxmox VE Shell:
+## Usage
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/tools/lxc-tun.sh)"

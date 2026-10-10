@@ -2,9 +2,10 @@
 
 A minimal Debian container, to use as a base for anything.
 
-## Install
+> [!IMPORTANT]
+> Run the commands on this page as root in the Proxmox VE Shell. From another account, switch to root with `su -` first: the scripts refuse `sudo`.
 
-Run in the Proxmox VE Shell:
+## Install
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/ct/debian.sh)"
