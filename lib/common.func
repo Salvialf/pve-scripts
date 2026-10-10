@@ -104,7 +104,7 @@ shell_check() {
     msg_error "Your default shell is currently not set to Bash. To use these scripts, please switch to the Bash shell."
     echo -e "\nExiting..."
     sleep 2
-    exit
+    exit 1
   fi
 }
 
@@ -114,19 +114,23 @@ root_check() {
     msg_error "Please run this script as root."
     echo -e "\nExiting..."
     sleep 2
-    exit
+    exit 1
   fi
 }
 
 # Tested versions only, not a minimum: a new major has to be checked before it gets added
 pve_check() {
+  if ! command -v pveversion >/dev/null 2>&1; then
+    msg_error "Run this script on the Proxmox VE host"
+    exit 1
+  fi
   if ! pveversion | grep -Eq "pve-manager/(8\.[1-9]|9\.[0-9])"; then
     msg_error "This version of Proxmox Virtual Environment is not supported"
-    echo -e "Requires Proxmox Virtual Environment Version 8.1 or later."
+    echo -e "Requires Proxmox Virtual Environment 8.1 to 9.x."
     echo -e "Exiting..."
     sleep 2
-    exit
-fi
+    exit 1
+  fi
 }
 
 arch_check() {
@@ -135,7 +139,7 @@ arch_check() {
     echo -e "\n Visit https://github.com/asylumexp/Proxmox for ARM64 support. \n"
     echo -e "Exiting..."
     sleep 2
-    exit
+    exit 1
   fi
 }
 
