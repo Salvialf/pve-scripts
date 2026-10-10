@@ -3,7 +3,9 @@
 [Jeedom](https://jeedom.com) is an open source home automation software. This script installs it with the official [jeedom/core](https://github.com/jeedom/core) install script.
 
 > [!IMPORTANT]
-> Run the commands on this page as root in the Proxmox VE Shell. From another account, switch to root with `su -` first: the scripts refuse `sudo`.
+> - Run the commands on this page in the Shell of the Proxmox VE host (node > Shell).
+> - Run them as root: from another account, use `su -` first, the scripts refuse `sudo`.
+> - Keep the Shell open until the script ends: leaving it stops the script.
 
 ## Install
 

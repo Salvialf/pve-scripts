@@ -6,7 +6,9 @@ Scripts to create ready-to-use LXC containers on Proxmox VE, in the spirit of tt
 
 - Proxmox VE 8.1 or later (8.x and 9.x)
 - An amd64 host
-- Run as root from the Proxmox VE Shell (`su -` from another account: the scripts refuse `sudo`)
+- Run the scripts in the Shell of the Proxmox VE host (node > Shell)
+- Run them as root: from another account, use `su -` first, the scripts refuse `sudo`
+- Keep the Shell open until the script ends: leaving it stops the script
 
 ## Usage
 
