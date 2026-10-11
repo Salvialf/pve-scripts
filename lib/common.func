@@ -13,12 +13,58 @@ variables() {
   newt_colors                                   # whiptail palette from the ct script's var_color_*
 }
 
-# Banner and palette of the tools/ scripts
+# Banner and palette of the tools/ scripts, TOOL_NAME is what the tool gives to a container
 tool_variables() {
+  TOOL_NAME="$1"
   BACKTITLE="Salvialf PVE scripts - $1"
   var_color_primary="color208"
   var_color_theme="dark"
   newt_colors
+}
+
+# The container comes from CT_ID, else from a menu of the host's containers
+tool_choose_ct() {
+  local menu=() id status name
+  CT_ID="${CT_ID:-}"
+  if [ -z "$CT_ID" ]; then
+    # pct list columns: VMID Status Lock Name, Lock often empty
+    while read -r id status name; do
+      menu+=("$id" "$name ($status)")
+    done < <(pct list | awk 'NR > 1 {print $1, $2, $NF}' || true)
+    if [ ${#menu[@]} -eq 0 ]; then
+      msg_error "No container found on this host"
+      exit 1
+    fi
+    CT_ID=$(wt --title "${TOOL_NAME^^}" --menu "Choose the container to give the $TOOL_NAME to" "${menu[@]}") || exit-script
+  fi
+  if [ ! -f "/etc/pve/lxc/${CT_ID}.conf" ]; then
+    msg_error "Container $CT_ID not found"
+    exit 1
+  fi
+}
+
+# Proxmox's device passthrough on the first free devN, shown in the container's Resources
+tool_add_device() {
+  local index=0 config
+  # With the changes waiting for a restart, so two devices added in a row don't share a devN
+  config=$(pct config "$CT_ID")
+  while grep -q "^dev$index:" <<< "$config"; do
+    index=$((index + 1))
+  done
+  pct set "$CT_ID" "-dev$index" "$1"
+}
+
+# Passthrough devices are only added when the container starts
+tool_offer_restart() {
+  if grep -q running <<< "$(pct status "$CT_ID")"; then
+    if wt --title "${TOOL_NAME^^}" --yesno "Container $CT_ID is running, the change only\napplies after a restart. Restart it now?"; then
+      msg_info "Restarting container $CT_ID"
+      pct reboot "$CT_ID"
+      msg_ok "Restarted container $CT_ID"
+    else
+      msg_warn "Restart container $CT_ID to apply"
+    fi
+  fi
 }
 
 # Shows the script's LOGO, except for a tool run by build.func (HEADER=no)
@@ -230,6 +276,13 @@ wt() {
         # A space each side of the descriptions, so the highlight doesn't stick to the text
         while [ $# -gt 0 ]; do
           args+=("$1" " $2 "); shift 2
+        done ;;
+      --checklist)
+        box="$1"
+        args+=("$1" -- "$2" 0 64 0); shift 2
+        # Tag, description, ON or OFF
+        while [ $# -gt 0 ]; do
+          args+=("$1" " $2 " "$3"); shift 3
         done ;;
       *)
         args+=("$1"); shift ;;
