@@ -26,15 +26,14 @@ CT_ID=105 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-s
 
 ## What it does
 
-It adds these two lines to the container's configuration (`/etc/pve/lxc/<CTID>.conf`), as in the Proxmox wiki page [OpenVPN in LXC](https://pve.proxmox.com/wiki/OpenVPN_in_LXC):
+It gives the host's `/dev/net/tun` to the container as a passthrough device, the same as Resources > Add > Device Passthrough in the Proxmox VE interface:
 
-```
-lxc.cgroup2.devices.allow: c 10:200 rwm
-lxc.mount.entry: /dev/net dev/net none bind,create=dir
+```bash
+pct set <CTID> -devN /dev/net/tun,mode=0666
 ```
 
-- Lines already there are not added again, running it twice is safe.
-- They go before the container's snapshots, so they apply to the container itself.
-- The wiki's `chown` of `/dev/net/tun` on the host is not needed: the device is already open to everyone on Proxmox VE.
+- The device then shows in the container's Resources, where it can be removed.
+- Mode `0666` opens it to everyone in the container, as on the host.
+- A container that already has the TUN device is left as it is, running it twice is safe. This includes containers set up with the two `lxc.*` lines of the Proxmox wiki page [OpenVPN in LXC](https://pve.proxmox.com/wiki/OpenVPN_in_LXC).
 
 The creation scripts use this same tool when their TUN device setting is on (Devices category of the settings menu).

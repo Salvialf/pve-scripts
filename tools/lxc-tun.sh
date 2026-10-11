@@ -40,28 +40,23 @@ if [ ! -f "$conf" ]; then
   exit 1
 fi
 
-# Lines from https://pve.proxmox.com/wiki/OpenVPN_in_LXC, without its chown of /dev/net/tun: already 0666 on the host
-lines=()
-if ! grep -q '^lxc.cgroup2.devices.allow: c 10:200 rwm' "$conf"; then
-  lines+=("lxc.cgroup2.devices.allow: c 10:200 rwm")
-fi
-if ! grep -q '^lxc.mount.entry: /dev/net' "$conf"; then
-  lines+=("lxc.mount.entry: /dev/net dev/net none bind,create=dir")
-fi
-if [ ${#lines[@]} -eq 0 ]; then
+# What follows the first [section] belongs to a snapshot or to the pending changes
+current_config=$(awk '/^\[/ {exit} {print}' "$conf")
+# A device passthrough, or the lxc lines this tool used to write
+if grep -Eq '^dev[0-9]+: (path=)?/dev/net/tun(,|$)|^lxc.mount.entry: /dev/net(/tun)? ' <<< "$current_config"; then
   msg_ok "Container $CT_ID already has the TUN device"
   exit 0
 fi
 
-# Before the first [section]: what follows it belongs to a snapshot or to the pending changes
-new_conf=$(TUN_LINES="$(printf '%s\n' "${lines[@]}")" awk '
-  !done && /^\[/ { print ENVIRON["TUN_LINES"]; done = 1 }
-  { print }
-  END { if (!done) print ENVIRON["TUN_LINES"] }' "$conf")
-echo "$new_conf" > "$conf"
+index=0
+while grep -q "^dev$index:" <<< "$current_config"; do
+  index=$((index + 1))
+done
+# Proxmox's device passthrough, shown in the container's Resources. 0666 as on the host
+pct set "$CT_ID" "-dev$index" /dev/net/tun,mode=0666
 msg_ok "Gave the TUN device to container $CT_ID"
 
-# The LXC configuration is only read when the container starts
+# Passthrough devices are only added when the container starts
 if pct status "$CT_ID" | grep -q running; then
   if wt --title "TUN DEVICE" --yesno "Container $CT_ID is running, the TUN device only\napplies after a restart. Restart it now?"; then
     msg_info "Restarting container $CT_ID"
