@@ -35,6 +35,7 @@ default_settings() {
   ONBOOT="${var_onboot:-no}"
   DOCKER_SUPPORT="${var_docker_support:-no}"
   TUN="${var_tun:-no}"
+  USB_DEVICES=""
   VERBOSE="no"
   # The ct script's app_settings values, if any
   if declare -F app_default_settings >/dev/null; then
@@ -529,14 +530,34 @@ step_tun() {
   TUN="$tun"
 }
 
+# Listed again at each pass, so a device plugged in meanwhile shows up
+step_usb_serial() {
+  local list=() path name selected
+  for path in /dev/serial/by-id/*; do
+    [ -e "$path" ] || continue
+    name="${path##*/}"
+    list+=("$name" "$(basename "$(readlink -f "$path")")" "$([[ " $USB_DEVICES " == *" $name "* ]] && echo ON || echo OFF)")
+  done
+  if [ ${#list[@]} -eq 0 ]; then
+    USB_DEVICES=""
+    wt --title "USB SERIAL DEVICES" --msgbox "No USB serial device is plugged into this host.\nPlug one in and retry, or use the dedicated tool later."
+    return
+  fi
+  selected=$(wt --title "USB SERIAL DEVICES" --separate-output --checklist "Choose the devices to give to the container\nUse Space to select a device" "${list[@]}") || return
+  USB_DEVICES="${selected//$'\n'/ }"
+}
+
 settings_devices() {
-  run_steps step_tun
+  run_steps step_tun step_usb_serial
 }
 
 summary_devices() {
   local parts=() list
   if [ "$TUN" == "yes" ]; then
     parts+=("TUN")
+  fi
+  if [ -n "$USB_DEVICES" ]; then
+    parts+=("USB serial ($(wc -w <<< "$USB_DEVICES"))")
   fi
   list=$(join_list "${parts[@]}")
   echo "${list:-none}"
@@ -737,10 +758,20 @@ create_container() {
   msg_ok "LXC Container ${BL}$CT_ID${CL} ${GN}was successfully created."
 }
 
+# Runs tools/$1 on the container being created, before its first start. The other arguments are the tool's variables
+run_tool() {
+  local tool
+  tool=$(curl -fsSL "https://raw.githubusercontent.com/Salvialf/pve-scripts/main/tools/$1") || {
+    msg_error "Unable to download $1"
+    exit 1
+  }
+  env CT_ID="$CT_ID" HEADER="no" "${@:2}" bash -c "$tool"
+}
+
 # Creates and starts the container, then runs install/<app>-install.sh inside it
 build_container() {
   # nesting on privileged containers too: systemd fails without it
-  local net0 features="nesting=1" install_func tun_tool
+  local net0 features="nesting=1" install_func
   if [ "$UNPRIVILEGED" == "1" ] && [ "$DOCKER_SUPPORT" == "yes" ]; then
     features+=",keyctl=1"
   fi
@@ -787,29 +818,13 @@ build_container() {
   create_container
 
   if [ "$TUN" == "yes" ]; then
-    tun_tool=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/tools/lxc-tun.sh) || {
-      msg_error "Unable to download lxc-tun.sh"
-      exit 1
-    }
-    CT_ID="$CT_ID" HEADER="no" bash -c "$tun_tool"
+    run_tool lxc-tun.sh
+  fi
+  if [ -n "$USB_DEVICES" ]; then
+    run_tool lxc-usb-serial.sh USB_DEVICES="$USB_DEVICES"
   fi
 
   LXC_CONFIG=/etc/pve/lxc/${CT_ID}.conf
-  if [ "$UNPRIVILEGED" == "0" ]; then
-    cat <<EOF >>$LXC_CONFIG
-# USB passthrough
-lxc.cgroup2.devices.allow: a
-lxc.cap.drop:
-lxc.cgroup2.devices.allow: c 188:* rwm
-lxc.cgroup2.devices.allow: c 189:* rwm
-lxc.mount.entry: /dev/serial/by-id  dev/serial/by-id  none bind,optional,create=dir
-lxc.mount.entry: /dev/ttyUSB0       dev/ttyUSB0       none bind,optional,create=file
-lxc.mount.entry: /dev/ttyUSB1       dev/ttyUSB1       none bind,optional,create=file
-lxc.mount.entry: /dev/ttyACM0       dev/ttyACM0       none bind,optional,create=file
-lxc.mount.entry: /dev/ttyACM1       dev/ttyACM1       none bind,optional,create=file
-EOF
-  fi
-
   if [ "$UNPRIVILEGED" == "0" ]; then
     if [[ "$APP" == "Channels" || "$APP" == "Emby" || "$APP" == "ErsatzTV" || "$APP" == "Frigate" || "$APP" == "Jellyfin" || "$APP" == "Plex" || "$APP" == "Scrypted" || "$APP" == "Tdarr" || "$APP" == "Unmanic" || "$APP" == "Ollama" ]]; then
       cat <<EOF >>$LXC_CONFIG

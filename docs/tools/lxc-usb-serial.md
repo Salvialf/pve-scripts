@@ -37,6 +37,8 @@ pct set <CTID> -devN /dev/serial/by-id/<name>,gid=20
 - A device the container already has is skipped, running it twice is safe.
 - A container that already gets every serial device through older methods (`lxc.mount.entry` of the whole `/dev/serial/by-id` folder, or an `lxc.hook.autodev` script) is left as it is. To switch to device passthrough, remove those lines first.
 
+The creation scripts use this same tool for the devices selected in the Devices category of the settings menu.
+
 ## If the container no longer starts
 
 Proxmox VE checks passthrough devices at every container start. When a device is unplugged, the start fails and the container's Task History shows:
