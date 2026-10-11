@@ -4,6 +4,9 @@
 # Author: tteck (tteckster) | Salvialf
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
+# Regex ranges like [a-z] stay ASCII whatever the locale, not exported to the commands
+LC_COLLATE=C
+
 variables() {
   APP_SLUG=$(echo ${APP,,} | tr -d ' ') # default hostname and install/<slug>-install.sh name
   BACKTITLE="Salvialf PVE scripts - ${APP} LXC" # shown on every whiptail window
