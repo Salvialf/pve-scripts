@@ -18,6 +18,15 @@ tool_variables() {
   newt_colors
 }
 
+# Shows the script's LOGO, except for a tool run by build.func (HEADER=no)
+header_info() {
+  if [ "${HEADER:-}" == "no" ]; then
+    return
+  fi
+  clear
+  printf '%s\n\n' "$LOGO"
+}
+
 color() {
   YW=$(echo "\033[33m")
   BL=$(echo "\033[36m")

@@ -7,17 +7,14 @@ source /dev/stdin <<< "$COMMON_FUNC"
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 # Source: https://jeedom.com/
 
-function header_info {
-clear
-cat <<"EOF"
+LOGO=$(cat <<"EOF"
        __              __
       / /__  ___  ____/ /___  ____ ___
  __  / / _ \/ _ \/ __  / __ \/ __ `__ \
 / /_/ /  __/  __/ /_/ / /_/ / / / / / /
 \____/\___/\___/\__,_/\____/_/ /_/ /_/
-
 EOF
-}
+)
 header_info
 echo -e "Loading..."
 APP="Jeedom"

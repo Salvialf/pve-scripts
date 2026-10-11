@@ -6,17 +6,14 @@ source /dev/stdin <<< "$COMMON_FUNC"
 # Modified by: Salvialf
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
-function header_info {
-clear
-cat <<"EOF"
+LOGO=$(cat <<"EOF"
     ____       __    _
    / __ \___  / /_  (_)___  ____
   / / / / _ \/ __ \/ / __ `/ __ \
  / /_/ /  __/ /_/ / / /_/ / / / /
 /_____/\___/_.___/_/\__,_/_/ /_/
-
 EOF
-}
+)
 header_info
 echo -e "Loading..."
 APP="Debian"
