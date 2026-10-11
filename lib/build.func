@@ -773,7 +773,7 @@ build_container() {
       msg_error "Unable to download lxc-tun.sh"
       exit 1
     }
-    CT_ID="$CT_ID" bash -c "$tun_tool"
+    CT_ID="$CT_ID" HEADER="no" bash -c "$tun_tool"
   fi
 
   LXC_CONFIG=/etc/pve/lxc/${CT_ID}.conf

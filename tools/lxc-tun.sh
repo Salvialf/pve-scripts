@@ -5,8 +5,15 @@ source /dev/stdin <<< "$COMMON_FUNC"
 # Author: Salvialf
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
-# Lines from https://pve.proxmox.com/wiki/OpenVPN_in_LXC, without its chown of /dev/net/tun: already 0666 on the host
-
+LOGO=$(cat <<"EOF"
+  ________  ___   __   ____            _
+ /_  __/ / / / | / /  / __ \___ _   __(_)_______
+  / / / / / /  |/ /  / / / / _ \ | / / / ___/ _ \
+ / / / /_/ / /|  /  / /_/ /  __/ |/ / / /__/  __/
+/_/  \____/_/ |_/  /_____/\___/|___/_/\___/\___/
+EOF
+)
+header_info
 tool_variables "TUN device"
 color
 catch_errors
@@ -33,6 +40,7 @@ if [ ! -f "$conf" ]; then
   exit 1
 fi
 
+# Lines from https://pve.proxmox.com/wiki/OpenVPN_in_LXC, without its chown of /dev/net/tun: already 0666 on the host
 lines=()
 if ! grep -q '^lxc.cgroup2.devices.allow: c 10:200 rwm' "$conf"; then
   lines+=("lxc.cgroup2.devices.allow: c 10:200 rwm")
