@@ -760,7 +760,7 @@ build_container() {
   # Read by install.func inside the container
   export APP APP_SLUG TIMEZONE ROOT_PASSWORD ROOT_SSH DISABLE_IPV6 APT_CACHER VERBOSE
 
-  net0="name=eth0,bridge=$BRIDGE,ip=$IPV4"
+  net0="name=eth0,bridge=$BRIDGE,firewall=1,ip=$IPV4"
   if [ "$IPV4" != "dhcp" ]; then
     net0+=",gw=$GATEWAY"
   fi
