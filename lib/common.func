@@ -91,6 +91,17 @@ tool_offer_restart() {
   fi
 }
 
+# Vendor of a GPU render node (renderD128...), from its PCI id
+gpu_vendor() {
+  # || true: with set -E, an error here would be read as the vendor
+  case "$(cat "/sys/class/drm/$1/device/vendor" 2>/dev/null || true)" in
+    0x8086) echo "Intel" ;;
+    0x1002) echo "AMD" ;;
+    0x10de) echo "NVIDIA" ;;
+    *) echo "Unknown vendor" ;;
+  esac
+}
+
 # Shows the script's LOGO, except for a tool run by build.func (HEADER=no)
 header_info() {
   if [ "${HEADER:-}" == "no" ]; then
