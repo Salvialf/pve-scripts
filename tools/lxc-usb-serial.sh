@@ -35,9 +35,8 @@ if [ -z "$USB_DEVICES" ]; then
 fi
 
 tool_choose_ct
-config=$(pct config "$CT_ID")
 # These older methods already pass every device, and devN on top of them could stop the container from starting
-if grep -Eq '^lxc.mount.entry: /dev/serial/by-id |^lxc.hook.autodev:' <<< "$config"; then
+if grep -Eq '^lxc.mount.entry: /dev/serial/by-id |^lxc.hook.autodev:' <<< "$(pct config "$CT_ID")"; then
   msg_warn "Container $CT_ID already gets every USB serial device through lxc.* lines, remove them to use device passthrough instead"
   exit 0
 fi
