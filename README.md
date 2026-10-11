@@ -41,6 +41,7 @@ To run in the Proxmox VE Shell, on existing containers.
 | Tool | Description |
 |---|---|
 | [TUN device](docs/tools/lxc-tun.md) | Gives a container the host's TUN device (VPNs and other network tunnels) |
+| [USB serial devices](docs/tools/lxc-usb-serial.md) | Gives a container the host's USB serial devices (Zigbee or Z-Wave keys, modems, UPS cables...) |
 
 ## Background
 
