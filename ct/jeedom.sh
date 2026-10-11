@@ -95,7 +95,6 @@ function jeedom_branch_exists() {
 }
 
 function update_script() {
-header_info
 if [[ ! -f /var/www/html/core/config/version ]]; then msg_error "No ${APP} Installation Found!"; exit; fi
 msg_info "Updating $APP LXC OS packages"
 apt-get update &>/dev/null

@@ -256,6 +256,7 @@ start() {
     source /dev/stdin <<< "$build_func"
     install_script
   else
+    header_info
     wt --title "UPDATE CONTAINER" --yesno "This will update the ${APP} LXC. Proceed?" || exit-script
     update_script
   fi
