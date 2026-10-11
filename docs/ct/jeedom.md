@@ -24,7 +24,7 @@ At the end, the script shows the URL of the Jeedom interface. The default login 
 | RAM | 2048 MiB |
 | Disk | 16 GiB |
 | Network | DHCP on `vmbr0` |
-| Container | Unprivileged, starts at boot, root autologin on the console |
+| Container | Unprivileged, starts at boot, Docker support, root autologin on the console |
 | Devices | TUN |
 | Jeedom branch | `master` |
 
@@ -50,7 +50,7 @@ The script checks that the branch exists before creating anything.
 
 ## TUN device
 
-Jeedom's DNS service and Matter plugin need the TUN device. The container gets it by default (Devices category of the settings menu).
+Jeedom's DNS service needs the TUN device. The container gets it by default (Devices category of the settings menu).
 
 For a container created without it, run the [TUN device tool](../tools/lxc-tun.md) on the host.
 

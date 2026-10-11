@@ -3,7 +3,7 @@
 Gives an existing container the host's TUN device (`/dev/net/tun`), needed by software that creates network tunnels inside the container, for example:
 
 - VPN software (OpenVPN, Tailscale...)
-- Jeedom's DNS service and Matter plugin
+- Jeedom's DNS service
 
 > [!IMPORTANT]
 > - Run the commands on this page in the Shell of the Proxmox VE host (node > Shell).
