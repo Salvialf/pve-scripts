@@ -51,9 +51,9 @@ is_ipv4() {
   [[ "$1" =~ ^($octet\.){3}$octet$ ]]
 }
 
-# Proxmox's hostname rule: dot-separated labels of letters, digits and inner hyphens, 255 characters at most
+# Dot-separated labels of letters, digits and inner hyphens, 63 characters per label (DNS), 255 in all (Proxmox)
 is_dns_name() {
-  local label='[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?'
+  local label='[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?'
   [ ${#1} -le 255 ] && [[ "$1" =~ ^($label\.)*$label$ ]]
 }
 
@@ -178,11 +178,13 @@ step_hostname() {
   local name="${CT_HOSTNAME:-$APP_SLUG}"
   while true; do
     name=$(wt --title "HOSTNAME" --inputbox "Set the hostname" "$name") || return
+    # Lowercase, spaces and underscores become hyphens, leading and trailing spaces are dropped
+    name=$(awk '{$1 = $1; gsub(/[ _]/, "-"); print tolower($0)}' <<< "$name")
     name="${name:-$APP_SLUG}"
     is_dns_name "$name" && break
-    wt --title "HOSTNAME" --msgbox "Invalid hostname: $name\nUse letters, digits, hyphens and dots"
+    wt --title "HOSTNAME" --msgbox "Invalid hostname: $name\nUse unaccented letters, digits, hyphens and dots"
   done
-  CT_HOSTNAME="${name,,}"
+  CT_HOSTNAME="$name"
 }
 
 step_ct_type() {
