@@ -17,7 +17,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/mai
 
 | Setting | Value |
 |---|---|
-| OS | Debian 12 |
+| OS | Debian 13 |
 | CPU | 1 vCPU |
 | RAM | 512 MiB |
 | Disk | 4 GiB |
@@ -25,7 +25,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/mai
 | Container | Unprivileged, root autologin on the console |
 
 > [!NOTE]
-> Debian 13 is available in the General settings.
+> Debian 12 is available in the General settings.
 > `curl` and `sudo` are installed on top of the Debian template.
 
 ## Update

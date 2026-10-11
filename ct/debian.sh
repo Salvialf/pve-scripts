@@ -22,7 +22,7 @@ var_cpu="1"
 var_ram="512"
 var_os="debian"
 var_os_locked="yes"
-var_version="12"
+var_version="13"
 var_color_primary="color125"
 variables
 color
