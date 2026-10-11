@@ -176,8 +176,7 @@ ssh_check() {
 }
 
 exit-script() {
-  clear
-  echo -e "⚠  User exited script \n"
+  msg_warn "Script exited, no changes made"
   exit
 }
 
