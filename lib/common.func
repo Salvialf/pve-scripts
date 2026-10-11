@@ -210,22 +210,23 @@ newt_colors() {
 }
 
 # Wraps whiptail: centered backtitle, sizes added after the box text, the answer is returned on stdout
-# The box option must be directly followed by its text
+# The box option must come after the other options, directly followed by its text
 wt() {
   local args=() nav=() cols breaks backtitle box="" rc=0
   while [ $# -gt 0 ]; do
     case "$1" in
       --inputbox | --yesno | --msgbox)
         box="$1"
-        args+=("$1" "$2" 0 64); shift 2 ;;
+        # -- ends the options: a value starting with a dash, like a typed -5, would be read as one
+        args+=("$1" -- "$2" 0 64); shift 2 ;;
       --passwordbox)
         box="$1"
         # newt's auto-size has no case for passwordbox and hides the text: 8 rows for one line, plus one per \n
         breaks="${2//\\n/}"
-        args+=("$1" "$2" $(((${#2} - ${#breaks}) / 2 + 8)) 64); shift 2 ;;
+        args+=("$1" -- "$2" $(((${#2} - ${#breaks}) / 2 + 8)) 64); shift 2 ;;
       --menu)
         box="$1"
-        args+=("$1" "$2" 0 64 0); shift 2
+        args+=("$1" -- "$2" 0 64 0); shift 2
         # A space each side of the descriptions, so the highlight doesn't stick to the text
         while [ $# -gt 0 ]; do
           args+=("$1" " $2 "); shift 2
