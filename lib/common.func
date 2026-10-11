@@ -54,6 +54,30 @@ tool_add_device() {
   pct set "$CT_ID" "-dev$index" "$1"
 }
 
+# Passes each host device through with group $1, skipping the missing ones and those the container already has
+tool_add_devices() {
+  local gid="$1" path passed added=""
+  shift
+  # The paths already passed through, without their options
+  passed=$(awk -F '[:,]' '/^dev[0-9]+:/ {sub(/^ *(path=)?/, "", $2); print $2}' <<< "$(pct config "$CT_ID")")
+  for path in "$@"; do
+    if [ ! -e "$path" ]; then
+      msg_error "${path##*/} not found on this host, skipped"
+      continue
+    fi
+    if grep -qxF "$path" <<< "$passed"; then
+      msg_ok "Container $CT_ID already has ${path##*/}"
+      continue
+    fi
+    tool_add_device "$path,gid=$gid"
+    msg_ok "Gave ${path##*/} to container $CT_ID"
+    added="yes"
+  done
+  if [ -n "$added" ]; then
+    tool_offer_restart
+  fi
+}
+
 # Passthrough devices are only added when the container starts
 tool_offer_restart() {
   if grep -q running <<< "$(pct status "$CT_ID")"; then

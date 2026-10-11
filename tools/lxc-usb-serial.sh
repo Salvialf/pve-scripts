@@ -49,25 +49,9 @@ if [ -z "$USB_DEVICES" ]; then
   fi
 fi
 
-# The paths already passed through, without their options
-passed=$(awk -F '[:,]' '/^dev[0-9]+:/ {sub(/^ *(path=)?/, "", $2); print $2}' <<< "$config")
-added=""
+paths=()
 for name in $USB_DEVICES; do
-  path="/dev/serial/by-id/$name"
-  if [ ! -e "$path" ]; then
-    msg_error "USB device $name not found on this host, skipped"
-    continue
-  fi
-  if grep -qxF "$path" <<< "$passed"; then
-    msg_ok "Container $CT_ID already has $name"
-    continue
-  fi
-  # The dialout group, as on the host
-  tool_add_device "$path,gid=20"
-  msg_ok "Gave $name to container $CT_ID"
-  added="yes"
+  paths+=("/dev/serial/by-id/$name")
 done
-
-if [ -n "$added" ]; then
-  tool_offer_restart
-fi
+# 20: the dialout group, as on the host
+tool_add_devices 20 "${paths[@]}"
