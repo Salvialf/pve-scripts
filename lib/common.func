@@ -57,7 +57,7 @@ tool_add_device() {
 # Passthrough devices are only added when the container starts
 tool_offer_restart() {
   if grep -q running <<< "$(pct status "$CT_ID")"; then
-    if wt --title "${TOOL_NAME^^}" --yesno "Container $CT_ID is running, the change only\napplies after a restart. Restart it now?"; then
+    if wt --title "${TOOL_NAME^^}" --yesno "The change only applies after a restart.\nContainer $CT_ID is running, restart it now?"; then
       msg_info "Restarting container $CT_ID"
       pct reboot "$CT_ID"
       msg_ok "Restarted container $CT_ID"
