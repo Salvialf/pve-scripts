@@ -33,6 +33,7 @@ default_settings() {
   VLAN=""
   ROOT_SSH="no"
   ONBOOT="${var_onboot:-no}"
+  DOCKER_SUPPORT="${var_docker_support:-no}"
   TUN="${var_tun:-no}"
   VERBOSE="no"
   # The ct script's app_settings values, if any
@@ -466,6 +467,16 @@ step_onboot() {
   ONBOOT="$onboot"
 }
 
+step_docker_support() {
+  # keyctl only exists for unprivileged containers, privileged ones run Docker with nesting alone
+  if [ "$UNPRIVILEGED" != "1" ]; then
+    return 2
+  fi
+  local docker
+  docker=$(wt --title "DOCKER SUPPORT" --notags --default-item "${DOCKER_SUPPORT:-no}" --menu "Allow running Docker inside the container?\nEnables the keyctl feature Docker needs" "yes" "Yes" "no" "No") || return
+  DOCKER_SUPPORT="$docker"
+}
+
 step_apt_cacher() {
   if [ "$var_os" == "alpine" ]; then
     APT_CACHER=""
@@ -488,13 +499,16 @@ step_verbose() {
 }
 
 settings_options() {
-  run_steps step_onboot step_apt_cacher step_verbose
+  run_steps step_onboot step_docker_support step_apt_cacher step_verbose
 }
 
 summary_options() {
   local parts=() list
   if [ "$ONBOOT" == "yes" ]; then
     parts+=("start at boot")
+  fi
+  if [ "$UNPRIVILEGED" == "1" ] && [ "$DOCKER_SUPPORT" == "yes" ]; then
+    parts+=("Docker support")
   fi
   if [ -n "$APT_CACHER" ]; then
     parts+=("APT-Cacher $APT_CACHER")
@@ -632,6 +646,9 @@ settings_summary() {
   echo "DNS server: ${DNS_SERVER:-same as host}"
   echo "DNS search domain: ${SEARCH_DOMAIN:-same as host}"
   echo "Start at boot: $([ "$ONBOOT" == "yes" ] && echo enabled || echo disabled)"
+  if [ "$UNPRIVILEGED" == "1" ]; then
+    echo "Docker support: $([ "$DOCKER_SUPPORT" == "yes" ] && echo enabled || echo disabled)"
+  fi
   if [ "$var_os" != "alpine" ]; then
     echo "APT-Cacher: ${APT_CACHER:-none}"
   fi
@@ -722,11 +739,10 @@ create_container() {
 
 # Creates and starts the container, then runs install/<app>-install.sh inside it
 build_container() {
-  local net0 install_func tun_tool
-  if [ "$UNPRIVILEGED" == "1" ]; then
-    FEATURES="keyctl=1,nesting=1"
-  else
-    FEATURES="nesting=1"
+  # nesting on privileged containers too: systemd fails without it
+  local net0 features="nesting=1" install_func tun_tool
+  if [ "$UNPRIVILEGED" == "1" ] && [ "$DOCKER_SUPPORT" == "yes" ]; then
+    features+=",keyctl=1"
   fi
 
   TEMP_DIR=$(mktemp -d)
@@ -750,7 +766,7 @@ build_container() {
   fi
   net0+="${MAC:+,hwaddr=$MAC}${VLAN:+,tag=$VLAN}${MTU:+,mtu=$MTU}"
   PCT_OPTIONS=(
-    -features "$FEATURES"
+    -features "$features"
     -hostname "$CT_HOSTNAME"
     -tags salvialf-pve-scripts
     -net0 "$net0"
