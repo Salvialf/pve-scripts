@@ -31,12 +31,10 @@ setting_up_container() {
     if [ "$(hostname -I)" != "" ]; then
       break
     fi
-    echo 1>&2 -en "${CROSS}${RD} No Network! "
     sleep $retry_every
   done
   if [ "$(hostname -I)" = "" ]; then
-    echo 1>&2 -e "\n${CROSS}${RD} No Network After $retry_num Tries${CL}"
-    echo -e " 🖧  Check Network Settings"
+    msg_error "No network after $retry_num tries, check the network settings"
     exit 1
   fi
   rm -rf /usr/lib/python3.*/EXTERNALLY-MANAGED
@@ -72,9 +70,9 @@ network_check() {
   if [[ $ipv4_connected == false && $ipv6_connected == false ]]; then
     read -r -p "No Internet detected,would you like to continue anyway? <y/N> " prompt
     if [[ "${prompt,,}" =~ ^(y|yes)$ ]]; then
-      echo -e " ⚠️  ${RD}Expect Issues Without Internet${CL}"
+      msg_warn "Expect issues without Internet"
     else
-      echo -e " 🖧  Check Network Settings"
+      msg_error "Check the network settings"
       exit 1
     fi
   fi
