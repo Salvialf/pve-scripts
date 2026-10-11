@@ -35,6 +35,8 @@ pct set <CTID> -devN /dev/dri/renderD128,gid=44
 - A container that gets the GPU through `lxc.mount.entry` lines on `/dev/dri` is left as it is. To switch to device passthrough, remove those lines first.
 - NVIDIA cards need more than the render node (their own devices and the same driver version in the container as on the host): they are not handled.
 
+The creation scripts use this same tool for the GPU chosen in the Devices category of the settings menu.
+
 ## Checking it works
 
 A smooth playback doesn't prove much: a recent processor can transcode on its own. During a playback that needs transcoding (a lower quality forced in the player, for example):

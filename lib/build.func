@@ -34,6 +34,7 @@ default_settings() {
   ROOT_SSH="no"
   ONBOOT="${var_onboot:-no}"
   DOCKER_SUPPORT="${var_docker_support:-no}"
+  GPU_DEVICE=""
   TUN="${var_tun:-no}"
   USB_DEVICES=""
   VERBOSE="no"
@@ -521,6 +522,24 @@ summary_options() {
   echo "${list:-none}"
 }
 
+# Render nodes only, like tools/lxc-gpu.sh. Hidden without a GPU: unlike a USB key, one can't be plugged in meanwhile
+step_gpu() {
+  local menu=("none" "None") path gpu
+  for path in /dev/dri/renderD*; do
+    [ -e "$path" ] || continue
+    menu+=("${path##*/}" "${path##*/} ($(gpu_vendor "${path##*/}"))")
+  done
+  if [ ${#menu[@]} -eq 2 ]; then
+    GPU_DEVICE=""
+    return 2
+  fi
+  gpu=$(wt --title "GPU DEVICE" --notags --default-item "${GPU_DEVICE:-none}" --menu "Give the container a GPU?\nFor hardware acceleration (transcoding, AI)" "${menu[@]}") || return
+  if [ "$gpu" == "none" ]; then
+    gpu=""
+  fi
+  GPU_DEVICE="$gpu"
+}
+
 step_tun() {
   local tun text="Give the container the TUN device?\nNeeded by VPNs and other network tunnels"
   if [ -n "${var_tun_note:-}" ]; then
@@ -548,11 +567,14 @@ step_usb_serial() {
 }
 
 settings_devices() {
-  run_steps step_tun step_usb_serial
+  run_steps step_gpu step_tun step_usb_serial
 }
 
 summary_devices() {
   local parts=() list
+  if [ -n "$GPU_DEVICE" ]; then
+    parts+=("GPU")
+  fi
   if [ "$TUN" == "yes" ]; then
     parts+=("TUN")
   fi
@@ -817,44 +839,14 @@ build_container() {
   fi
   create_container
 
+  if [ -n "$GPU_DEVICE" ]; then
+    run_tool lxc-gpu.sh GPU_DEVICE="$GPU_DEVICE"
+  fi
   if [ "$TUN" == "yes" ]; then
     run_tool lxc-tun.sh
   fi
   if [ -n "$USB_DEVICES" ]; then
     run_tool lxc-usb-serial.sh USB_DEVICES="$USB_DEVICES"
-  fi
-
-  LXC_CONFIG=/etc/pve/lxc/${CT_ID}.conf
-  if [ "$UNPRIVILEGED" == "0" ]; then
-    if [[ "$APP" == "Channels" || "$APP" == "Emby" || "$APP" == "ErsatzTV" || "$APP" == "Frigate" || "$APP" == "Jellyfin" || "$APP" == "Plex" || "$APP" == "Scrypted" || "$APP" == "Tdarr" || "$APP" == "Unmanic" || "$APP" == "Ollama" ]]; then
-      cat <<EOF >>$LXC_CONFIG
-# VAAPI hardware transcoding
-lxc.cgroup2.devices.allow: c 226:0 rwm
-lxc.cgroup2.devices.allow: c 226:128 rwm
-lxc.cgroup2.devices.allow: c 29:0 rwm
-lxc.mount.entry: /dev/fb0 dev/fb0 none bind,optional,create=file
-lxc.mount.entry: /dev/dri dev/dri none bind,optional,create=dir
-lxc.mount.entry: /dev/dri/renderD128 dev/dri/renderD128 none bind,optional,create=file
-EOF
-    fi
-  else
-    if [[ "$APP" == "Channels" || "$APP" == "Emby" || "$APP" == "ErsatzTV" || "$APP" == "Frigate" || "$APP" == "Jellyfin" || "$APP" == "Plex" || "$APP" == "Scrypted" || "$APP" == "Tdarr" || "$APP" == "Unmanic" || "$APP" == "Ollama" ]]; then
-      if [[ -e "/dev/dri/renderD128" ]]; then
-        if [[ -e "/dev/dri/card0" ]]; then
-          cat <<EOF >>$LXC_CONFIG
-# VAAPI hardware transcoding
-dev0: /dev/dri/card0,gid=44
-dev1: /dev/dri/renderD128,gid=104
-EOF
-        else
-          cat <<EOF >>$LXC_CONFIG
-# VAAPI hardware transcoding
-dev0: /dev/dri/card1,gid=44
-dev1: /dev/dri/renderD128,gid=104
-EOF
-        fi
-      fi
-    fi
   fi
 
   msg_info "Starting LXC Container"
