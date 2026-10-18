@@ -33,6 +33,7 @@ As with any script found online, read it before running it on your host.
 |---|---|
 | [Debian](docs/ct/debian.md) | Minimal Debian container |
 | [Jeedom](docs/ct/jeedom.md) | Jeedom home automation software |
+| [Ubuntu](docs/ct/ubuntu.md) | Minimal Ubuntu container |
 
 ## Tools
 

@@ -151,9 +151,8 @@ step_version() {
       "13" "Trixie (13)") || return
   elif [ "$var_os" == "ubuntu" ]; then
     version=$(wt --title "UBUNTU VERSION" --notags --default-item "$var_version" --menu "Choose the Ubuntu version" \
-      "20.04" "Focal (20.04)" \
-      "22.04" "Jammy (22.04)" \
-      "24.04" "Noble (24.04)") || return
+      "24.04" "Noble (24.04)" \
+      "26.04" "Resolute (26.04)") || return
   else
     return 2
   fi
@@ -737,7 +736,7 @@ install_script() {
   settings_menu
   header_info
   echo_settings
-  echo -e "${BL}Creating a ${APP} LXC using the above settings${CL}"
+  echo -e "${BL}Creating the ${APP} LXC using the above settings${CL}"
   msg_warn "Keep this Shell open until the end: leaving it stops the install"
 }
 
