@@ -22,29 +22,53 @@ root_check
 
 # Names that stay the same across reboots and replugs, unlike ttyACM0 or ttyUSB0
 USB_DEVICES="${USB_DEVICES:-}"
+
+tool_choose_ct
+# tteck's USB block and usb-passthrough.sh's hook
+tool_lxc_lines '^lxc.mount.entry: /dev/(serial/by-id|ttyUSB|ttyACM)|^lxc.cgroup2.devices.allow: c (166|188|189):|^lxc.hook.autodev:'
+
+# The checklist shows the container's devices checked: unchecking one removes it
 if [ -z "$USB_DEVICES" ]; then
+  declare -A keys=()
+  while read -r key path; do
+    if [[ "$path" == /dev/serial/by-id/* ]]; then
+      keys[$path]="$key"
+    fi
+  done < <(tool_devices || true)
+
   list=()
   for path in /dev/serial/by-id/*; do
     [ -e "$path" ] || continue
-    list+=("${path##*/}" "$(basename "$(readlink -f "$path")")" OFF)
+    list+=("${path##*/}" "$(basename "$(readlink -f "$path")")" "$([ -n "${keys[$path]:-}" ] && echo ON || echo OFF)")
+  done
+  # An unplugged device stops the container from starting
+  for path in "${!keys[@]}"; do
+    [ -e "$path" ] || list+=("${path##*/}" "not plugged" ON)
   done
   if [ ${#list[@]} -eq 0 ]; then
     msg_error "No USB serial device found on this host"
     exit 1
   fi
-fi
 
-tool_choose_ct
-# These older methods already pass every device, and devN on top of them could stop the container from starting
-if grep -Eq '^lxc.mount.entry: /dev/serial/by-id |^lxc.hook.autodev:' <<< "$(pct config "$CT_ID")"; then
-  msg_warn "Container $CT_ID already gets every USB serial device through lxc.* lines, remove them to use device passthrough instead"
-  exit 0
-fi
-
-if [ -z "$USB_DEVICES" ]; then
-  USB_DEVICES=$(wt --title "${TOOL_NAME^^}" --separate-output --checklist "Choose the devices to give to container $CT_ID\nUse Space to select a device" "${list[@]}") || exit-script
+  checked=$(wt --title "${TOOL_NAME^^}" --separate-output --checklist "Choose the devices to give to container $CT_ID\nUse Space to check or uncheck a device" "${list[@]}") || exit-script
+  removed=""
+  for path in "${!keys[@]}"; do
+    if ! grep -qxF "${path##*/}" <<< "$checked"; then
+      pct set "$CT_ID" -delete "${keys[$path]}"
+      msg_ok "Removed ${path##*/} from container $CT_ID"
+      removed="yes"
+    fi
+  done
+  for name in $checked; do
+    if [ -z "${keys[/dev/serial/by-id/$name]:-}" ]; then
+      USB_DEVICES+=" $name"
+    fi
+  done
+  # Nothing to add: offer the restart here, tool_add_devices offers it otherwise
   if [ -z "$USB_DEVICES" ]; then
-    exit-script
+    [ -n "$removed" ] || exit-script
+    tool_offer_restart
+    exit 0
   fi
 fi
 

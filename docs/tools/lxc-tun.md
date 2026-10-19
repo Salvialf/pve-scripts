@@ -32,8 +32,14 @@ It gives the host's `/dev/net/tun` to the container as a passthrough device, the
 pct set <CTID> -devN /dev/net/tun,mode=0666
 ```
 
-- The device then shows in the container's Resources, where it can be removed.
+- The device then shows in the container's Resources.
 - Mode `0666` opens it to everyone in the container, as on the host.
-- A container that already has the TUN device is left as it is, running it twice is safe. This includes containers set up with the two `lxc.*` lines of the Proxmox wiki page [OpenVPN in LXC](https://pve.proxmox.com/wiki/OpenVPN_in_LXC).
+- A container that gets the TUN device through `lxc.*` lines, like those of the Proxmox wiki page [OpenVPN in LXC](https://pve.proxmox.com/wiki/OpenVPN_in_LXC), is left as it is: the script shows these lines and stops. To switch to device passthrough, remove them from `/etc/pve/lxc/<CTID>.conf` on the host, then run the script again.
 
 The creation scripts use this same tool when their TUN device setting is on (Devices category of the settings menu).
+
+## Removing the device
+
+Run the script again: when the container already has the TUN device, it offers to remove it. Or remove the `/dev/net/tun` line from the container's Resources.
+
+On a running container, the removal only applies after a restart, which the script offers.

@@ -35,11 +35,8 @@ if [ -z "$GPU_DEVICE" ]; then
 fi
 
 tool_choose_ct
-# These older methods already pass the GPU, and devN on top of them could stop the container from starting
-if grep -Eq '^lxc.mount.entry: /dev/dri' <<< "$(pct config "$CT_ID")"; then
-  msg_warn "Container $CT_ID already gets the GPU through lxc.* lines, remove them to use device passthrough instead"
-  exit 0
-fi
+# tteck's VAAPI block, the framebuffer included
+tool_lxc_lines '^lxc.mount.entry: /dev/(dri|fb0)|^lxc.cgroup2.devices.allow: c (226|29):'
 
 if [ -z "$GPU_DEVICE" ]; then
   # A single GPU (one name and its vendor in the menu): no question
@@ -48,6 +45,15 @@ if [ -z "$GPU_DEVICE" ]; then
   else
     GPU_DEVICE=$(wt --title "${TOOL_NAME^^}" --menu "Choose the GPU to give to container $CT_ID" "${menu[@]}") || exit-script
   fi
+fi
+
+key=$(tool_device_key "/dev/dri/$GPU_DEVICE")
+if [ -n "$key" ]; then
+  wt --title "${TOOL_NAME^^}" --defaultno --yesno "Container $CT_ID already has $GPU_DEVICE.\nRemove it?" || exit-script
+  pct set "$CT_ID" -delete "$key"
+  msg_ok "Removed $GPU_DEVICE from container $CT_ID"
+  tool_offer_restart
+  exit 0
 fi
 
 # 44: the video group, the same in every Debian and Ubuntu, unlike render

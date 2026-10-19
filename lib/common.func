@@ -43,6 +43,25 @@ tool_choose_ct() {
   fi
 }
 
+# The container's passthrough devices, one "devN path" line each, without their options
+tool_devices() {
+  awk -F '[:,]' '/^dev[0-9]+:/ {sub(/^ *(path=)?/, "", $2); print $1, $2}' <<< "$(pct config "$CT_ID")"
+}
+
+# The devN passing the host's $1 through, empty when the container doesn't have it
+tool_device_key() {
+  tool_devices | awk -v path="$1" '$2 == path {print $1}'
+}
+
+# Stops when the container gets the device through lxc.* lines matching $1, a devN on top could stop it from starting
+tool_lxc_lines() {
+  local lines
+  lines=$(grep -E "$1" <<< "$(pct config "$CT_ID")") || return 0
+  msg_warn "Container $CT_ID gets the $TOOL_NAME through these lines of /etc/pve/lxc/$CT_ID.conf, remove them to use device passthrough instead:"
+  echo "$lines"
+  exit 0
+}
+
 # Proxmox's device passthrough on the first free devN, shown in the container's Resources
 tool_add_device() {
   local index=0 config
@@ -58,8 +77,7 @@ tool_add_device() {
 tool_add_devices() {
   local gid="$1" path passed added=""
   shift
-  # The paths already passed through, without their options
-  passed=$(awk -F '[:,]' '/^dev[0-9]+:/ {sub(/^ *(path=)?/, "", $2); print $2}' <<< "$(pct config "$CT_ID")")
+  passed=$(tool_devices | awk '{print $2}')
   for path in "$@"; do
     if [ ! -e "$path" ]; then
       msg_error "${path##*/} not found on this host, skipped"

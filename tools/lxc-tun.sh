@@ -21,9 +21,15 @@ pve_check
 root_check
 tool_choose_ct
 
-# A device passthrough, or the lxc lines this tool used to write. Mounting both makes the container fail to start
-if grep -Eq '^dev[0-9]+: (path=)?/dev/net/tun(,|$)|^lxc.mount.entry: /dev/net(/tun)? ' <<< "$(pct config "$CT_ID")"; then
-  msg_ok "Container $CT_ID already has the TUN device"
+# The Proxmox wiki's lines (folder mount) and tteck's (file mount)
+tool_lxc_lines '^lxc.mount.entry: /dev/net(/tun)? |^lxc.cgroup2.devices.allow: c 10:200 '
+
+key=$(tool_device_key /dev/net/tun)
+if [ -n "$key" ]; then
+  wt --title "${TOOL_NAME^^}" --defaultno --yesno "Container $CT_ID already has the TUN device.\nRemove it?" || exit-script
+  pct set "$CT_ID" -delete "$key"
+  msg_ok "Removed the TUN device from container $CT_ID"
+  tool_offer_restart
   exit 0
 fi
 

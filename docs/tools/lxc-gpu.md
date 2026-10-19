@@ -29,13 +29,18 @@ It gives the render node to the container as a passthrough device, the same as R
 pct set <CTID> -devN /dev/dri/renderD128,gid=44
 ```
 
-- The device then shows in the container's Resources, where it can be removed.
+- The device then shows in the container's Resources.
 - Group `44` is `video`, the same in every Debian and Ubuntu (the `render` group's number changes from one system to another). The app's user must be a member of `video`, for example `usermod -aG video jellyfin` in the container.
-- A container that already has this render node is left as it is, running it twice is safe.
-- A container that gets the GPU through `lxc.mount.entry` lines on `/dev/dri` is left as it is. To switch to device passthrough, remove those lines first.
+- A container that gets the GPU through `lxc.*` lines (`/dev/dri` mounts, for example) is left as it is: the script shows these lines and stops. To switch to device passthrough, remove them from `/etc/pve/lxc/<CTID>.conf` on the host, then run the script again.
 - NVIDIA cards need more than the render node (their own devices and the same driver version in the container as on the host): they are not handled.
 
 The creation scripts use this same tool for the GPU chosen in the Devices category of the settings menu.
+
+## Removing the device
+
+Run the script again: when the container already has the chosen render node, it offers to remove it. Or remove the `/dev/dri/renderD128` line from the container's Resources.
+
+On a running container, the removal only applies after a restart, which the script offers.
 
 ## Checking it works
 
