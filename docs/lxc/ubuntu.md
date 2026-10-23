@@ -10,7 +10,7 @@ A minimal Ubuntu container, to use as a base for anything.
 ## Install
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/ct/ubuntu.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/ubuntu.sh)"
 ```
 
 ## Default settings

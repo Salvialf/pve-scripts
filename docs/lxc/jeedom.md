@@ -10,7 +10,7 @@
 ## Install
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/ct/jeedom.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/jeedom.sh)"
 ```
 
 At the end, the script shows the URL of the Jeedom interface. The default login is `admin`/`admin`.
@@ -43,7 +43,7 @@ Jeedom is installed from the `master` branch by default. The Jeedom category of 
 The branch can also be passed on the command line, it then becomes the default:
 
 ```bash
-JEEDOM_BRANCH="develop" bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/ct/jeedom.sh)"
+JEEDOM_BRANCH="develop" bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/jeedom.sh)"
 ```
 
 The script checks that the branch exists before creating anything.

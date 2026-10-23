@@ -15,7 +15,7 @@ Scripts to create ready-to-use LXC containers on Proxmox VE, in the spirit of tt
 Each app page gives the command to run in the Proxmox VE Shell, for example:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/ct/debian.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/debian.sh)"
 ```
 
 The script creates the container, then installs the app inside it. Before creating anything, a settings menu shows the app's recommended settings, grouped by category:
@@ -31,9 +31,9 @@ As with any script found online, read it before running it on your host.
 
 | App | Description |
 |---|---|
-| [Debian](docs/ct/debian.md) | Minimal Debian container |
-| [Jeedom](docs/ct/jeedom.md) | Jeedom home automation software |
-| [Ubuntu](docs/ct/ubuntu.md) | Minimal Ubuntu container |
+| [Debian](docs/lxc/debian.md) | Minimal Debian container |
+| [Jeedom](docs/lxc/jeedom.md) | Jeedom home automation software |
+| [Ubuntu](docs/lxc/ubuntu.md) | Minimal Ubuntu container |
 
 ## Tools
 

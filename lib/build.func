@@ -696,7 +696,7 @@ settings_summary() {
   fi
   echo "Verbose mode: $([ "$VERBOSE" == "yes" ] && echo enabled || echo disabled)"
   echo "Devices: $(summary_devices)"
-  # App-specific lines, optionally defined by ct/<app>.sh
+  # App-specific lines, optionally defined by lxc/<app>.sh
   if declare -F app_summary >/dev/null; then
     app_summary
   fi

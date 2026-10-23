@@ -14,7 +14,7 @@ setting_up_container
 network_check
 update_os
 
-# JEEDOM_BRANCH is exported by ct/jeedom.sh
+# JEEDOM_BRANCH is exported by lxc/jeedom.sh
 msg_ok "Installing Jeedom from branch: ${JEEDOM_BRANCH}"
 
 msg_info "Downloading Jeedom installation script"
