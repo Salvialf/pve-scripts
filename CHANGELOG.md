@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-10-24
+
+### Changed
+
+- The tools' windows take the logo's yellow.
+
 ## 2026-10-23
 
 ### Changed

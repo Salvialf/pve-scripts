@@ -17,7 +17,7 @@ variables() {
 tool_variables() {
   TOOL_NAME="$1"
   BACKTITLE="Salvialf PVE scripts - $1"
-  var_color_primary="color208"
+  var_color_primary="color220"
   var_color_theme="dark"
   newt_colors
 }
