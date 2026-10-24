@@ -1,4 +1,7 @@
-# pve-scripts
+<div align="center">
+  <img src="logos/pve-scripts.svg" alt="" width="120">
+  <h1>pve-scripts</h1>
+</div>
 
 Scripts to create ready-to-use LXC containers on Proxmox VE, in the spirit of tteck's original [Proxmox VE Helper-Scripts](https://github.com/tteck/Proxmox): simple, readable end to end, driven by a single command on the Proxmox host.
 

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="28 28 184 184" width="512" height="512">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFD800"/>
+      <stop offset="1" stop-color="#F2B200"/>
+    </linearGradient>
+    <clipPath id="units">
+      <rect x="36" y="44" width="168" height="44" rx="12"/>
+      <rect x="36" y="98" width="168" height="44" rx="12"/>
+      <rect x="36" y="152" width="168" height="44" rx="12"/>
+    </clipPath>
+    <mask id="cut">
+      <rect x="0" y="0" width="240" height="240" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="65,72 113,120 65,168"/>
+        <line x1="127" y1="174" x2="175" y2="174"/>
+      </g>
+    </mask>
+  </defs>
+  <g mask="url(#cut)">
+    <g fill="url(#gold)" stroke="#DA9001" stroke-width="3">
+      <rect x="36" y="44" width="168" height="44" rx="12"/>
+      <rect x="36" y="98" width="168" height="44" rx="12"/>
+      <rect x="36" y="152" width="168" height="44" rx="12"/>
+    </g>
+    <g clip-path="url(#units)" fill="none" stroke="#DA9001" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="65,72 113,120 65,168"/>
+      <line x1="127" y1="174" x2="175" y2="174"/>
+    </g>
+    <g fill="#DA9001">
+      <circle cx="190" cy="58" r="7.5"/>
+      <circle cx="190" cy="112" r="7.5"/>
+    </g>
+  </g>
+</svg>
