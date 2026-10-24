@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logos/pve-scripts.svg" alt="" width="120">
+  <img src="logos/pve-scripts.svg" alt="">
   <h1>Changelog</h1>
   <p>All notable changes to this project will be documented in this file.</p>
 </div>

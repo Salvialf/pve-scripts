@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logos/pve-scripts.svg" alt="" width="120">
+  <img src="logos/pve-scripts.svg" alt="">
   <h1>pve-scripts</h1>
   <p>
     <a href="#containers"><img src="https://img.shields.io/github/directory-file-count/Salvialf/pve-scripts/lxc?type=file&extension=sh&label=containers&color=F2B200" alt="Containers"></a>
