@@ -2,9 +2,9 @@
   <img src="logos/pve-scripts.svg" alt="" width="120">
   <h1>pve-scripts</h1>
   <p>
-    <a href="#containers"><img src="https://img.shields.io/github/directory-file-count/Salvialf/pve-scripts/lxc?type=file&extension=sh&label=containers" alt="Containers"></a>
-    <a href="#tools"><img src="https://img.shields.io/github/directory-file-count/Salvialf/pve-scripts/tools?type=file&extension=sh&label=tools" alt="Tools"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/Salvialf/pve-scripts" alt="License"></a>
+    <a href="#containers"><img src="https://img.shields.io/github/directory-file-count/Salvialf/pve-scripts/lxc?type=file&extension=sh&label=containers&color=F2B200" alt="Containers"></a>
+    <a href="#tools"><img src="https://img.shields.io/github/directory-file-count/Salvialf/pve-scripts/tools?type=file&extension=sh&label=tools&color=F2B200" alt="Tools"></a>
+    <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-F2B200" alt="Changelog"></a>
   </p>
 </div>
 
