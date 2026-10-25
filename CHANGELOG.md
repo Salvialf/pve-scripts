@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-10-25
+
+### Changed
+
+- When an install step fails, the error shows the failed command and the end of its output, instead of the same generic message for every error.
+
 ## 2026-10-24
 
 ### Changed

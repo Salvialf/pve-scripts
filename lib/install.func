@@ -9,7 +9,15 @@ verb_ip6() {
   if [ "$VERBOSE" = "yes" ]; then
     STD=""
   else STD="silent"; fi
-  silent() { "$@" >/dev/null 2>&1; }
+  # Read by error_handler to show the failed command and its output
+  SILENT_LOG="/tmp/pve-scripts-silent.log"
+  silent() {
+    SILENT_CMD="$*"
+    "$@" >"$SILENT_LOG" 2>&1
+    local status=$?
+    rm -f "$SILENT_LOG"
+    return $status
+  }
   if [ "$DISABLE_IPV6" == "yes" ]; then
     echo "net.ipv6.conf.all.disable_ipv6 = 1" >>/etc/sysctl.conf
     $STD sysctl -p

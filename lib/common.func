@@ -153,11 +153,11 @@ error_handler() {
   stop_spinner
   local line_number="$1"
   local command="$2"
-  local error_message="${RD}[ERROR]${CL} in line ${RD}$line_number${CL}: exit code ${RD}$exit_code${CL}: while executing command ${YW}$command${CL}"
-  echo -e "\n$error_message"
-  # The function where the error happened
   if [ "${FUNCNAME[1]:-}" == "silent" ]; then
-    echo "The silent function has suppressed the error, run the script with verbose mode enabled, which will provide more detailed output."
+    echo -e "\n${RD}[ERROR]${CL} exit code ${RD}$exit_code${CL} while executing command ${YW}$SILENT_CMD${CL}, end of its output:"
+    tail -n 20 "$SILENT_LOG"
+  else
+    echo -e "\n${RD}[ERROR]${CL} in line ${RD}$line_number${CL}: exit code ${RD}$exit_code${CL}: while executing command ${YW}$command${CL}"
   fi
   echo
 }
