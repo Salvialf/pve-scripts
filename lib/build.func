@@ -346,7 +346,7 @@ step_ipv4() {
     ip="${ip:-dhcp}"
     [ "$ip" == "dhcp" ] && break
     is_ipv4 "${ip%/*}" && [[ "$ip" =~ /([0-9]|[12][0-9]|3[0-2])$ ]] && break
-    wt --title "IPv4 ADDRESS" --msgbox "Invalid IPv4 address: $ip\nUse the format 192.168.1.50/24, or dhcp"
+    wt --title "IPv4 ADDRESS" --msgbox "Invalid IPv4 address: $ip\nUse the format 192.168.1.50/24 or dhcp"
   done
   IPV4="$ip"
 }
@@ -379,7 +379,7 @@ step_vlan() {
     vlan=$(wt --title "VLAN" --inputbox "Set the VLAN tag\nLeave blank for none" "$vlan") || return
     [ -z "$vlan" ] && break
     is_number_in 1 4094 "$vlan" && break
-    wt --title "VLAN" --msgbox "Invalid VLAN tag: $vlan\nUse a number from 1 to 4094, or leave blank"
+    wt --title "VLAN" --msgbox "Invalid VLAN tag: $vlan\nUse a number from 1 to 4094 or leave blank"
   done
   VLAN="$vlan"
 }
@@ -402,7 +402,7 @@ step_mtu() {
     mtu=$(wt --title "MTU" --inputbox "Set the interface MTU size\nLeave blank for default" "$mtu") || return
     [ -z "$mtu" ] && break
     is_number_in 64 65535 "$mtu" && break
-    wt --title "MTU" --msgbox "Invalid MTU size: $mtu\nUse a number from 64 to 65535, or leave blank"
+    wt --title "MTU" --msgbox "Invalid MTU size: $mtu\nUse a number from 64 to 65535 or leave blank"
   done
   MTU="$mtu"
 }
@@ -643,7 +643,7 @@ settings_menu() {
       menu+=("app" "$(menu_line "$APP" "$(summary_app)")")
     fi
     choice=$(wt --title "SETTINGS" --notags --ok-button Select --cancel-button Exit \
-      --menu "Create the container, or choose what to change" "${menu[@]}") || exit-script
+      --menu "Create the container or choose what to change" "${menu[@]}") || exit-script
     # Back from the first step of a category returns 1: this menu shows again
     case "$choice" in
       create)

@@ -285,7 +285,7 @@ exit-script() {
 # Colors whiptail after the app's logo: var_color_primary on the banner and accents, light or dark windows
 newt_colors() {
   local primary="${var_color_primary:-}" screen="color235" surface text
-  # No app color, or under 256 colors (ssh often sets TERM=xterm): keep whiptail's own palette
+  # No app color or under 256 colors (ssh often sets TERM=xterm): keep whiptail's own palette
   if [ -z "$primary" ] || [ "$(tput colors 2>/dev/null || echo 0)" -lt 256 ]; then
     return
   fi
