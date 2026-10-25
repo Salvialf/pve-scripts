@@ -58,8 +58,10 @@ For a container created without it, run the [TUN device tool](../tools/lxc-tun.m
 
 USB serial devices plugged into the host (Z-Wave, Zigbee, EnOcean or RFXCOM keys, teleinfo modem, UPS serial cable...) can be given to the container in the Devices category of the settings menu. For an existing container, run the [USB serial devices tool](../tools/lxc-usb-serial.md) on the host.
 
+In the plugin's settings, choose the device by its `/dev/serial/by-id/...` path.
+
 > [!NOTE]
-> Until [jeedom/core#3609](https://github.com/jeedom/core/pull/3609) reaches Jeedom's stable version, plugins don't list a device given by its `/dev/serial/by-id/...` path. Meanwhile, give it by its port name instead:
+> This doesn't work yet with the `master` or `release` branch, until [jeedom/core#3609](https://github.com/jeedom/core/pull/3609) reaches them: their plugins don't list these paths. Meanwhile, give the device by its port name instead:
 > 1. On the host, run `ls -l /dev/serial/by-id/`: the device's line ends with its port name, for example `../../ttyUSB0`.
 > 2. Stop the container.
 > 3. In its Resources, edit the device and replace its `/dev/serial/by-id/...` Device Path with that port, for example `/dev/ttyUSB0`, then start the container.
