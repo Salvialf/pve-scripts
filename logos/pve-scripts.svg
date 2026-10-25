@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="28 28 184 184" width="128" height="128">
   <defs>
     <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FFD800"/>
-      <stop offset="1" stop-color="#F2B200"/>
+      <stop offset="0" stop-color="#FFE033"/>
+      <stop offset="1" stop-color="#E6A700"/>
     </linearGradient>
     <clipPath id="units">
       <rect x="36" y="44" width="168" height="44" rx="12"/>
