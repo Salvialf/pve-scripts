@@ -6,9 +6,10 @@
 
 # Disk, CPU, RAM and OS come from the ct script's var_* variables
 default_settings() {
-  DEFAULT_TEMPLATE_STORAGE=$(awk 'NR == 1 {print $1}' <<< "$TEMPLATE_STORAGE_LIST")
+  # Default to the storages the Proxmox VE installer creates
+  DEFAULT_TEMPLATE_STORAGE=$(preferred_storage "$TEMPLATE_STORAGE_LIST" local local-btrfs)
   TEMPLATE_STORAGE="$DEFAULT_TEMPLATE_STORAGE"
-  CONTAINER_STORAGE=$(awk 'NR == 1 {print $1}' <<< "$CONTAINER_STORAGE_LIST")
+  CONTAINER_STORAGE=$(preferred_storage "$CONTAINER_STORAGE_LIST" local-lvm local-zfs local-btrfs)
   CONTAINER_STORAGE_FREE=$(storage_free "$CONTAINER_STORAGE")
   DEFAULT_BRIDGE="${BRIDGE_NAMES[0]}"
   if [[ " ${BRIDGE_NAMES[*]} " == *" vmbr0 "* ]]; then
@@ -44,6 +45,13 @@ default_settings() {
   fi
 }
 
+# Prints the arguments separated by commas, nothing without arguments
+join_list() {
+  local list
+  list=$(printf '%s, ' "$@")
+  echo "${list%, }"
+}
+
 # Succeeds when $3 is a whole number between $1 and $2 (9 digits at most, so test can compare it)
 is_number_in() {
   [[ "$3" =~ ^[0-9]{1,9}$ ]] && [ "$3" -ge "$1" ] && [ "$3" -le "$2" ]
@@ -70,11 +78,18 @@ storage_free() {
   awk -v storage="$1" '$1 == storage {print $6}' <<< "$CONTAINER_STORAGE_LIST"
 }
 
-# Prints the arguments separated by commas, nothing without arguments
-join_list() {
-  local list
-  list=$(printf '%s, ' "$@")
-  echo "${list%, }"
+# Prints the first preferred storage found in the list, else the first one by name
+# Arguments: pvesm status lines without header, preferred storage names
+preferred_storage() {
+  local list="$1" name
+  shift
+  for name in "$@"; do
+    if awk -v storage="$name" '$1 == storage {found = 1} END {exit !found}' <<< "$list"; then
+      echo "$name"
+      return
+    fi
+  done
+  awk 'NR == 1 {print $1}' <<< "$list"
 }
 
 # Prints the storage to use, asking only when there are several

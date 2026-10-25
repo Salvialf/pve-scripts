@@ -9,6 +9,7 @@
 ### Changed
 
 - When an install step fails, the error shows the failed command and the end of its output, instead of the same generic message for every error.
+- The storages proposed by default are the ones the Proxmox VE installer creates when they exist (`local`, `local-lvm`, `local-zfs` or `local-btrfs`), instead of the first one in alphabetical order.
 
 ### Fixed
 
