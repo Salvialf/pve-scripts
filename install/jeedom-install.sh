@@ -25,6 +25,8 @@ msg_ok "Installation script downloaded"
 
 msg_info "Installing Jeedom main dependencies, please wait"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 2
+# Temporary python3-venv manual install until https://github.com/jeedom/core/pull/3535 is on master
+$STD apt-get install -y python3-venv
 msg_ok "Installed Jeedom main dependencies"
 
 msg_info "Installing database"
@@ -65,6 +67,7 @@ msg_ok "Post-installation done"
 
 msg_info "Checking installation"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 12
+# Temporary reboot hint until https://github.com/jeedom/core/pull/3544 is on master
 msg_ok "Installation checked, a reboot is recommended"
 
 motd_ssh

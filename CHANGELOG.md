@@ -10,6 +10,10 @@
 
 - When an install step fails, the error shows the failed command and the end of its output, instead of the same generic message for every error.
 
+### Fixed
+
+- Jeedom: the install could sometimes fail at the `Cleaning up` step, or leave Node.js or `python3-venv` missing.
+
 ## 2026-10-24
 
 ### Changed
