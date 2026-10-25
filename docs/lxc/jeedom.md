@@ -54,6 +54,15 @@ Jeedom's DNS service needs the TUN device. The container gets it by default (Dev
 
 For a container created without it, run the [TUN device tool](../tools/lxc-tun.md) on the host.
 
+## USB serial devices
+
+USB serial devices plugged into the host (Z-Wave, Zigbee, EnOcean or RFXCOM keys, teleinfo modem, UPS serial cable...) can be given to the container in the Devices category of the settings menu. For an existing container, run the [USB serial devices tool](../tools/lxc-usb-serial.md) on the host.
+
+In the plugin's settings, choose the device by its `/dev/serial/by-id/...` path, which stays the same across reboots and replugs.
+
+> [!WARNING]
+> A device given to the container must stay plugged in: if it is missing, the container no longer starts. See [If the container no longer starts](../tools/lxc-usb-serial.md#if-the-container-no-longer-starts).
+
 ## Update
 
 Running `update` from the container's console upgrades the OS packages only. Update Jeedom itself from its web interface.
