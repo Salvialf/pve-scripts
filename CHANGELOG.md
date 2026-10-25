@@ -6,6 +6,10 @@
 
 ## 2026-10-25
 
+### Added
+
+- The container's Notes show the project logo, links to pve-scripts and to the app's documentation, how to update the container and where to find the device tools.
+
 ### Changed
 
 - When an install step fails, the error shows the failed command and the end of its output, instead of the same generic message for every error.

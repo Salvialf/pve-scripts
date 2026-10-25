@@ -895,14 +895,21 @@ get_ip() {
 }
 
 description() {
-  : # no-op: everything below is commented out for now
-  # tteck's original also set a logo + Ko-fi link here, text not decided yet
-  # pct set "$CT_ID" -description "<div align='center'><a href='https://Helper-Scripts.com' target='_blank' rel='noopener noreferrer'><img src='https://raw.githubusercontent.com/tteck/Proxmox/main/misc/images/logo-81x112.png'/></a>
-  #
-  # # ${APP} LXC
-  #
-  # <a href='https://ko-fi.com/proxmoxhelperscripts'><img src='https://img.shields.io/badge/&#x2615;-Buy me a coffee-blue' /></a>
-  # </div>"
+  local repo="https://github.com/Salvialf/pve-scripts"
+  pct set "$CT_ID" -description "$(cat <<EOF
+<div align="center">
+<a href="$repo" target="_blank"><img src="https://raw.githubusercontent.com/Salvialf/pve-scripts/main/logos/pve-scripts.svg" alt="pve-scripts"></a>
+
+## ${APP} LXC
+
+Created with <a href="$repo" target="_blank">pve-scripts</a> &middot; <a href="$repo/blob/main/docs/lxc/${APP_SLUG}.md" target="_blank">Documentation</a>
+</div>
+
+**Update:** run \`update\` in the container's console.
+
+**Devices:** host devices can be added or removed with the <a href="$repo#tools" target="_blank">tools</a>.
+EOF
+)"
   # Pauses/resumes tteck's optional monitor-all.sh host ping service
   # if [[ -f /etc/systemd/system/ping-instances.service ]]; then
   #   systemctl start ping-instances.service
