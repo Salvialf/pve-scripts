@@ -70,7 +70,7 @@ function step_jeedom_other_branch() {
   done
 
   if [ ${#branches[@]} -gt 0 ]; then
-    branch=$(wt --title "JEEDOM BRANCH" --notags --default-item "$JEEDOM_BRANCH" --menu "Choose another branch (not supported)" \
+    branch=$(wt --title "JEEDOM BRANCH" --notags --default-item "$JEEDOM_BRANCH" --menu "Choose another branch" \
       "${branches[@]}") || return
   else
     branch="$JEEDOM_BRANCH"
@@ -89,6 +89,14 @@ function app_default_settings() {
 
 function app_summary() {
   echo "Jeedom branch: $JEEDOM_BRANCH"
+}
+
+# Temporary Debian 13 check until https://github.com/jeedom/core/pull/3483 is on master
+function app_check() {
+  if [ "$var_version" == "13" ] && [[ "$JEEDOM_BRANCH" =~ ^(master|release)$ ]]; then
+    wt --title "JEEDOM BRANCH" --msgbox "Jeedom's master and release branches don't support Debian 13 yet\nChoose Debian 12 or the develop branch"
+    return 1
+  fi
 }
 
 function jeedom_branch_exists() {

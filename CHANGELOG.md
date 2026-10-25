@@ -13,6 +13,7 @@
 ### Fixed
 
 - Jeedom: the install could sometimes fail at the `Cleaning up` step, or leave Node.js or `python3-venv` missing.
+- Jeedom: Debian 13 could be chosen with the `master` or `release` branch, which don't support it yet, and the install then failed. This combination is now refused when choosing Create.
 
 ## 2026-10-24
 

@@ -647,6 +647,10 @@ settings_menu() {
     # Back from the first step of a category returns 1: this menu shows again
     case "$choice" in
       create)
+        # The ct script's own checks on the chosen settings, if any
+        if declare -F app_check >/dev/null && ! app_check; then
+          continue
+        fi
         if disk_fits "$DISK_SIZE" || disk_space_warning "$DISK_SIZE"; then
           return
         fi ;;
