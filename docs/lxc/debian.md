@@ -28,6 +28,10 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/mai
 > Debian 12 is available in the General settings.
 > `curl` and `sudo` are installed on top of the Debian template.
 
+## Devices
+
+The host's GPU, TUN device and USB serial devices can be given to the container in the Devices category of the settings menu or later with the [tools](../../README.md#tools).
+
 ## Update
 
 Run `update` from the container's console to upgrade its OS packages.
