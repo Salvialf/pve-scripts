@@ -735,10 +735,6 @@ install_script() {
   arch_check
   ssh_check
 
-  # Pauses/resumes tteck's optional monitor-all.sh host ping service
-  # if systemctl is-active -q ping-instances.service; then
-  #   systemctl -q stop ping-instances.service
-  # fi
   NEXTID=$(pvesh get /cluster/nextid)
   # timedatectl is more reliable than /etc/timezone on newer systemd-based
   # hosts (e.g. Debian 13); fall back to /etc/timezone for older systems
@@ -910,8 +906,4 @@ Created with <a href="$repo" target="_blank">pve-scripts</a> &middot; <a href="$
 **Devices:** host devices can be added or removed with the <a href="$repo#tools" target="_blank">tools</a>.
 EOF
 )"
-  # Pauses/resumes tteck's optional monitor-all.sh host ping service
-  # if [[ -f /etc/systemd/system/ping-instances.service ]]; then
-  #   systemctl start ping-instances.service
-  # fi
 }
