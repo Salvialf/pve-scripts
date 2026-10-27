@@ -61,6 +61,6 @@ It is also distinct from [community-scripts](https://github.com/community-script
 
 ## License
 
-[MIT](LICENSE)
+Code: [MIT](LICENSE). The pve-scripts logo (`logos/pve-scripts.svg`) is not covered by the MIT license: © 2026 Salvialf, all rights reserved.
 
 <sub>Proxmox® is a registered trademark of Proxmox Server Solutions GmbH.</sub>
