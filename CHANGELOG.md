@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-10-29
+
+### Added
+
+- [Z-Wave JS UI container](docs/lxc/zwave-js-ui.md), with its data kept apart from the program so updates never touch it.
+
 ## 2026-10-25
 
 ### Added

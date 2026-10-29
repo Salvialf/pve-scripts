@@ -42,6 +42,7 @@ As with any script found online, read it before running it on your host.
 | [Debian](docs/lxc/debian.md) | Minimal Debian container |
 | [Jeedom](docs/lxc/jeedom.md) | Jeedom home automation software |
 | [Ubuntu](docs/lxc/ubuntu.md) | Minimal Ubuntu container |
+| [Z-Wave JS UI](docs/lxc/zwave-js-ui.md) | Z-Wave network controller with a web interface |
 
 ## Tools
 
