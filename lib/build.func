@@ -563,21 +563,34 @@ step_tun() {
   TUN="$tun"
 }
 
-# Listed again at each pass, so a device plugged in meanwhile shows up
+# Listed again at each Yes, so a device plugged in meanwhile shows up
 step_usb_serial() {
-  local list=() path name selected
-  for path in /dev/serial/by-id/*; do
-    [ -e "$path" ] || continue
-    name="${path##*/}"
-    list+=("$name" "$(basename "$(readlink -f "$path")")" "$([[ " $USB_DEVICES " == *" $name "* ]] && echo ON || echo OFF)")
+  local list path name answer selected rc
+  while true; do
+    answer=$(wt --title "USB SERIAL DEVICES" --notags --default-item "$([ -n "$USB_DEVICES" ] && echo yes || echo no)" --menu "Give the container USB serial devices?\nZigbee or Z-Wave keys, modems, UPS cables" "yes" "Yes" "no" "No") || return
+    if [ "$answer" == "no" ]; then
+      USB_DEVICES=""
+      return
+    fi
+    list=()
+    for path in /dev/serial/by-id/*; do
+      [ -e "$path" ] || continue
+      name="${path##*/}"
+      list+=("$name" "$(basename "$(readlink -f "$path")")" "$([[ " $USB_DEVICES " == *" $name "* ]] && echo ON || echo OFF)")
+    done
+    if [ ${#list[@]} -eq 0 ]; then
+      wt --title "USB SERIAL DEVICES" --msgbox "No USB serial device is plugged into this host.\nPlug one in and choose Yes again, or use the dedicated tool later."
+      continue
+    fi
+    rc=0
+    selected=$(wt --title "USB SERIAL DEVICES" --separate-output --checklist "Choose the devices to give to the container\nUse Space to select a device" "${list[@]}") || rc=$?
+    case $rc in
+      0) USB_DEVICES="${selected//$'\n'/ }"; return ;;
+      # Back returns to the question
+      1) continue ;;
+      *) return "$rc" ;;
+    esac
   done
-  if [ ${#list[@]} -eq 0 ]; then
-    USB_DEVICES=""
-    wt --title "USB SERIAL DEVICES" --msgbox "No USB serial device is plugged into this host.\nPlug one in and retry, or use the dedicated tool later."
-    return
-  fi
-  selected=$(wt --title "USB SERIAL DEVICES" --separate-output --checklist "Choose the devices to give to the container\nUse Space to select a device" "${list[@]}") || return
-  USB_DEVICES="${selected//$'\n'/ }"
 }
 
 settings_devices() {

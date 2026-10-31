@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-10-31
+
+### Changed
+
+- The **USB serial devices** setting asks first whether to give the container a device, instead of directly showing a message when none is plugged into the host.
+
 ## 2026-10-29
 
 ### Added
