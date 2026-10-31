@@ -9,6 +9,7 @@
 ### Changed
 
 - The **USB serial devices** setting asks first whether to give the container a device, instead of directly showing a message when none is plugged into the host.
+- The login banner shows the container's OS, hostname, IP address, memory, disk and uptime, read at each login.
 
 ## 2026-10-29
 
