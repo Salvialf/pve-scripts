@@ -220,35 +220,47 @@ summary_general() {
   echo "${var_os^} $var_version, CT $CT_ID, $CT_HOSTNAME, $([ "$UNPRIVILEGED" == "1" ] && echo unprivileged || echo privileged)"
 }
 
-step_password() {
-  local pw1="$ROOT_PASSWORD" pw2
+# Asks a password then its confirmation and prints it, $3 being the current one
+# $4 checks a new password: it shows why it is refused and fails
+ask_password() {
+  local title="$1" text="$2" current="$3" check="$4" pw1="$3" pw2
   while true; do
     # Prefilled with the current password, so going back and forth keeps it
-    pw1=$(wt --title "ROOT PASSWORD" --passwordbox "Set the root password, required for root SSH access\nLeave blank for automatic console login" "$pw1") || return
-    if [ -z "$pw1" ]; then
-      ROOT_PASSWORD=""
-      return 0
-    fi
-    # Already confirmed
-    if [ "$ROOT_PASSWORD" == "$pw1" ]; then
-      return 0
-    fi
-    if [[ "$pw1" == *" "* ]]; then
-      wt --title "ROOT PASSWORD" --msgbox "Password cannot contain spaces. Please try again."
+    pw1=$(wt --title "$title" --passwordbox "$text" "$pw1") || return
+    if ! "$check" "$pw1"; then
       continue
     fi
-    if [ ${#pw1} -lt 5 ]; then
-      wt --title "ROOT PASSWORD" --msgbox "Password must be at least 5 characters long. Please try again."
-      continue
+    # Blank or already confirmed
+    if [ -z "$pw1" ] || [ "$pw1" == "$current" ]; then
+      printf '%s' "$pw1"
+      return 0
     fi
     # Back from the confirmation asks the password again
-    pw2=$(wt --title "ROOT PASSWORD" --passwordbox "Confirm the root password") || { [ $? -eq 1 ] && continue; return 255; }
+    pw2=$(wt --title "$title" --passwordbox "Confirm the password") || { [ $? -eq 1 ] && continue; return 255; }
     if [ "$pw1" == "$pw2" ]; then
-      ROOT_PASSWORD="$pw1"
+      printf '%s' "$pw1"
       return 0
     fi
-    wt --title "ROOT PASSWORD" --msgbox "Passwords do not match. Please try again."
+    wt --title "$title" --msgbox "Passwords do not match. Please try again."
   done
+}
+
+# Blank means automatic console login
+root_password_check() {
+  if [[ "$1" == *" "* ]]; then
+    wt --title "ROOT PASSWORD" --msgbox "Password cannot contain spaces. Please try again."
+    return 1
+  fi
+  if [ -n "$1" ] && [ ${#1} -lt 5 ]; then
+    wt --title "ROOT PASSWORD" --msgbox "Password must be at least 5 characters long. Please try again."
+    return 1
+  fi
+}
+
+step_password() {
+  local pw
+  pw=$(ask_password "ROOT PASSWORD" "Set the root password, required for root SSH access\nLeave blank for automatic console login" "$ROOT_PASSWORD" root_password_check) || return
+  ROOT_PASSWORD="$pw"
 }
 
 # Root SSH access needs a password
