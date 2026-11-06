@@ -8,7 +8,7 @@
   </p>
 </div>
 
-Scripts to create ready-to-use LXC containers on Proxmox VE, in the spirit of tteck's original [Proxmox VE Helper-Scripts](https://github.com/tteck/Proxmox): simple, readable end to end, driven by a single command on the Proxmox host.
+Scripts to create ready-to-use LXC containers from a single settings menu, in the spirit of tteck's original [Proxmox VE Helper-Scripts](https://github.com/tteck/Proxmox): simple, readable end to end, driven by one command on the Proxmox host.
 
 ## Requirements
 
