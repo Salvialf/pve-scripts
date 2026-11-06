@@ -1,0 +1,57 @@
+# Mosquitto LXC
+
+[Mosquitto](https://mosquitto.org/) is an MQTT broker: home automation software and devices (Jeedom, Home Assistant, Zigbee2MQTT, Z-Wave JS UI, ESPHome...) exchange their messages through it. This script installs Debian's `mosquitto` package.
+
+> [!IMPORTANT]
+> - Run the commands on this page in the Shell of the Proxmox VE host (node > Shell).
+> - Run them as root: from another account, use `su -` first, the scripts refuse `sudo`.
+> - Keep the Shell open until the script ends: leaving it stops the script.
+
+## Install
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/mosquitto.sh)"
+```
+
+Set the MQTT user and password in the Mosquitto category of the settings menu: the container can't be created without them. At the end, the script shows the broker's address, on port `1883`.
+
+## Default settings
+
+| Setting | Value |
+|---|---|
+| OS | Debian 13 |
+| CPU | 1 vCPU |
+| RAM | 512 MiB |
+| Disk | 2 GiB |
+| Network | DHCP on `vmbr0` |
+| Container | Unprivileged, starts at boot, root autologin on the console |
+
+> [!NOTE]
+> Debian 12 and Ubuntu are available in the General settings.
+
+## Configuration
+
+The broker listens on port `1883` and refuses clients without a user and password. Its settings are in `/etc/mosquitto/conf.d/default.conf`, its users in `/etc/mosquitto/passwd`.
+
+The connection is not encrypted: keep the broker on a trusted local network.
+
+## Users
+
+From the container's console, add a user or change a password (asked twice):
+
+```bash
+mosquitto_passwd /etc/mosquitto/passwd <user>
+systemctl reload mosquitto
+```
+
+Remove a user with `mosquitto_passwd -D /etc/mosquitto/passwd <user>`, then reload the same way. The reload applies the change without disconnecting the clients.
+
+`mosquitto_passwd` warns that the file's owner is not root: the file belongs to the `mosquitto` user on purpose, so that only the broker can read it.
+
+## Update
+
+Running `update` from the container's console upgrades the OS packages, Mosquitto included.
+
+## Credits
+
+Originally written by [tteck](https://github.com/tteck) for [Proxmox VE Helper-Scripts](https://github.com/tteck/Proxmox).

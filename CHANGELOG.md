@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-06
+
+### Added
+
+- [Mosquitto container](docs/lxc/mosquitto.md), with its MQTT user and password set in the settings menu, so clients can connect as soon as the install ends.
+
 ## 2026-10-31
 
 ### Changed
