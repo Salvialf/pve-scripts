@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-07
+
+### Fixed
+
+- The install no longer reports **IPv6 Internet Not Connected** as an error when IPv6 is disabled in the settings.
+
 ## 2026-11-06
 
 ### Added
