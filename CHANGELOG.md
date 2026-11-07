@@ -6,6 +6,10 @@
 
 ## 2026-11-07
 
+### Changed
+
+- Jeedom containers no longer get **Docker support** by default: enable it in the Options category if a plugin needs Docker.
+
 ### Fixed
 
 - The install no longer reports **IPv6 Internet Not Connected** as an error when IPv6 is disabled in the settings.

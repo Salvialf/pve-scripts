@@ -24,7 +24,7 @@ At the end, the script shows the URL of the Jeedom interface. The default login 
 | RAM | 2048 MiB |
 | Disk | 16 GiB |
 | Network | DHCP on `vmbr0` |
-| Container | Unprivileged, starts at boot, Docker support, root autologin on the console |
+| Container | Unprivileged, starts at boot, root autologin on the console |
 | Devices | TUN |
 | Jeedom branch | `master` |
 
@@ -70,6 +70,10 @@ In the plugin's settings, choose the device by its `/dev/serial/by-id/...` path.
 
 > [!WARNING]
 > A device given to the container must stay plugged in: if it is missing, the container no longer starts. See [If the container no longer starts](../tools/lxc-usb-serial.md#if-the-container-no-longer-starts).
+
+## Docker
+
+Plugins that run Docker, such as the Docker management plugin, need the **Docker support** setting (Options category of the settings menu). For an existing container, enable `keyctl` in its Options > Features, then restart it.
 
 ## Update
 
