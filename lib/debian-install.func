@@ -4,20 +4,9 @@
 # Modified by: Salvialf
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
-# Verbose mode ($STD before a command hides its output unless verbose) and the IPv6 setting
+# Verbose mode and the IPv6 setting
 verb_ip6() {
-  if [ "$VERBOSE" = "yes" ]; then
-    STD=""
-  else STD="silent"; fi
-  # Read by error_handler to show the failed command and its output
-  SILENT_LOG="/tmp/pve-scripts-silent.log"
-  silent() {
-    SILENT_CMD="$*"
-    "$@" >"$SILENT_LOG" 2>&1
-    local status=$?
-    rm -f "$SILENT_LOG"
-    return $status
-  }
+  std_mode
   if [ "$DISABLE_IPV6" == "yes" ]; then
     printf "net.ipv6.conf.all.disable_ipv6 = 1\nnet.ipv6.conf.default.disable_ipv6 = 1\n" >/etc/sysctl.d/99-disable-ipv6.conf
     $STD sysctl -e -p /etc/sysctl.d/99-disable-ipv6.conf
@@ -114,37 +103,10 @@ EOF
   msg_ok "Updated Container OS"
 }
 
-# Login banner read at each login, so the IP, disk and OS stay current
+# Login banner, and root SSH access when chosen
 motd_ssh() {
   echo "export TERM='xterm-256color'" >>/root/.bashrc
-  cat <<EOF >/etc/profile.d/pve-scripts-motd.sh
-# Login banner written by pve-scripts
-case \$- in
-  *i*) ;;
-  *) return ;;
-esac
-(
-  APP="$APP"
-EOF
-  cat <<'EOF' >>/etc/profile.d/pve-scripts-motd.sh
-  line() {
-    printf '  \033[33m%-9s\033[m %s\n' "$1" "$2"
-  }
-  # Console only: over SSH this would wipe the user's own terminal history
-  case $(tty) in
-    /dev/tty[0-9]* | /dev/console) printf '\033[3J\033[H\033[2J' ;;
-  esac
-  printf '\n\033[1;33m%s LXC\033[m, by pve-scripts\n' "$APP"
-  line OS "$(. /etc/os-release && echo "$PRETTY_NAME")"
-  line Hostname "$(uname -n)"
-  ip=$(ip -4 route get 1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p')
-  line IP "${ip:-none}"
-  line Memory "$(free -h | awk '/^Mem:/ {print $3 " used of " $2}')"
-  line Disk "$(df -h --output=used,size,pcent / | awk 'NR==2 {print $1 " used of " $2 " (" $3 ")"}')"
-  line Uptime "$(uptime -p | sed 's/^up //')"
-  echo
-)
-EOF
+  login_banner
   # Emptied, not removed: base-files would write Debian's legal notice back
   : >/etc/motd
   chmod -x /etc/update-motd.d/*
