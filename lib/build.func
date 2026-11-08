@@ -842,14 +842,14 @@ build_container() {
   if [ "$var_os" == "alpine" ]; then
     export FUNCTIONS_FILE_PATH="$(curl -s https://raw.githubusercontent.com/tteck/Proxmox/main/misc/alpine-install.func)"
   else
-    install_func=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/install.func) || {
-      msg_error "Unable to download install.func"
+    install_func=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/debian-install.func) || {
+      msg_error "Unable to download debian-install.func"
       exit 1
     }
     # The ct script's common.func, the same version as the host's
     export FUNCTIONS_FILE_PATH="$COMMON_FUNC"$'\n'"$install_func"
   fi
-  # Read by install.func inside the container
+  # Read by the install functions inside the container
   export APP APP_SLUG TIMEZONE ROOT_PASSWORD ROOT_SSH DISABLE_IPV6 APT_CACHER VERBOSE
 
   net0="name=eth0,bridge=$BRIDGE,firewall=1,ip=$IPV4"
