@@ -10,6 +10,14 @@
 
 - [Post install tool](docs/tools/pve-post-install.md) to prepare a Proxmox VE 9 host from a single checklist: no-subscription repository and no subscription popup when the host has no subscription, high availability off on a single node, update.
 
+### Fixed
+
+- **Disable IPv6** now survives a reboot on Debian 13. To fix an existing Debian 13 container, run in its console:
+  ```bash
+  printf "net.ipv6.conf.all.disable_ipv6 = 1\nnet.ipv6.conf.default.disable_ipv6 = 1\n" > /etc/sysctl.d/99-disable-ipv6.conf
+  sysctl -p /etc/sysctl.d/99-disable-ipv6.conf
+  ```
+
 ## 2026-11-07
 
 ### Changed
