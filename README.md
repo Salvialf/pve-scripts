@@ -41,6 +41,7 @@ As with any script found online, read it before running it on your host.
 
 | App | Description |
 |---|---|
+| [AdGuard Home](docs/lxc/adguard-home.md) | DNS server that blocks ads and trackers for the whole network |
 | [Debian](docs/lxc/debian.md) | Minimal Debian container |
 | [Jeedom](docs/lxc/jeedom.md) | Jeedom home automation software |
 | [Mosquitto](docs/lxc/mosquitto.md) | MQTT broker, with its user and password set at install |
