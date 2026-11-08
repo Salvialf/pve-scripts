@@ -25,9 +25,10 @@ Set the MQTT user and password in the Mosquitto category of the settings menu: t
 | Disk | 2 GiB |
 | Network | DHCP on `vmbr0` |
 | Container | Unprivileged, starts at boot, root autologin on the console |
+| MQTT user and password | Required (no default) |
 
 > [!NOTE]
-> Debian 12 and Ubuntu are available in the General settings.
+> Other Debian versions and Ubuntu are available in the General settings.
 
 ## Configuration
 

@@ -25,7 +25,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/mai
 | Container | Unprivileged, root autologin on the console |
 
 > [!NOTE]
-> Debian 12 is available in the General settings.
+> Other Debian versions are available in the General settings.
 > `curl` and `sudo` are installed on top of the Debian template.
 
 ## Devices

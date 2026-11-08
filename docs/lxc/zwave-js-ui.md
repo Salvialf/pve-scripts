@@ -27,7 +27,7 @@ At the end, the script shows the URL of the Z-Wave JS UI interface, on port `809
 | Container | Unprivileged, starts at boot, root autologin on the console |
 
 > [!NOTE]
-> Debian 12 and Ubuntu are available in the General settings.
+> Other Debian versions and Ubuntu are available in the General settings.
 
 ## Z-Wave key
 

@@ -29,7 +29,7 @@ At the end, the script shows the address of AdGuard Home's setup wizard, on port
 | Container | Unprivileged, starts at boot, root autologin on the console |
 
 > [!NOTE]
-> Debian 12 and Ubuntu are available in the General settings.
+> Other Debian versions and Ubuntu are available in the General settings.
 
 ## Backup
 
