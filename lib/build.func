@@ -155,22 +155,37 @@ step_distribution() {
   os=$(wt --title "DISTRIBUTION" --notags --default-item "$var_os" --menu "Choose the distribution" \
     "debian" "Debian" \
     "ubuntu" "Ubuntu") || return
+  if [ "$os" != "$var_os" ]; then
+    var_version=$(os_versions "$os" | tail -n 1)
+  fi
   var_os="$os"
 }
 
+# Versions of distribution $1 with a template for this host's architecture, oldest first
+os_versions() {
+  pveam available -section system |
+    awk '{print $2}' |
+    grep "_$(dpkg --print-architecture)\.tar\." |
+    sed -n "s/^$1-\([0-9.]*\)-.*/\1/p" |
+    sort -uV || true
+}
+
+# "Debian 13 Trixie" from Proxmox's template index, else "Debian 13"
+os_version_label() {
+  local label
+  label=$(grep -h "^Description: ${1^} $2 " /var/lib/pve-manager/apl-info/* 2>/dev/null | head -n 1 | sed 's/^Description: //; s/ (.*//') || true
+  echo "${label:-${1^} $2}"
+}
+
 step_version() {
-  local version
-  if [ "$var_os" == "debian" ]; then
-    version=$(wt --title "DEBIAN VERSION" --notags --default-item "$var_version" --menu "Choose the Debian version" \
-      "12" "Bookworm (12)" \
-      "13" "Trixie (13)") || return
-  elif [ "$var_os" == "ubuntu" ]; then
-    version=$(wt --title "UBUNTU VERSION" --notags --default-item "$var_version" --menu "Choose the Ubuntu version" \
-      "24.04" "Noble (24.04)" \
-      "26.04" "Resolute (26.04)") || return
-  else
+  local menu=() version
+  while read -r version; do
+    menu+=("$version" "$(os_version_label "$var_os" "$version")")
+  done < <(os_versions "$var_os")
+  if [ ${#menu[@]} -eq 0 ]; then
     return 2
   fi
+  version=$(wt --title "${var_os^^} VERSION" --notags --default-item "$var_version" --menu "Choose the ${var_os^} version" "${menu[@]}") || return
   var_version="$version"
 }
 

@@ -12,6 +12,10 @@
 - [AdGuard Home container](docs/lxc/adguard-home.md), installed and updated with AdGuard's own tools.
 - [Caddy container](docs/lxc/caddy.md), installed from Caddy's official repository. `update` refreshes the repository key first, so updates no longer stop when it expires.
 
+### Changed
+
+- The Debian and Ubuntu versions of the settings menu are no longer a fixed list: they follow Proxmox's templates, a release showing up or going away with its template.
+
 ### Fixed
 
 - **Disable IPv6** now survives a reboot on Debian 13. To fix an existing Debian 13 container, run in its console:
