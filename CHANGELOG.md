@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-08
+
+### Added
+
+- [Post install tool](docs/tools/pve-post-install.md) to prepare a Proxmox VE 9 host from a single checklist: no-subscription repository and no subscription popup when the host has no subscription, high availability off on a single node, update.
+
 ## 2026-11-07
 
 ### Changed

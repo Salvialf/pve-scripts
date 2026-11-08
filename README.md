@@ -47,13 +47,26 @@ As with any script found online, read it before running it on your host.
 
 ## Tools
 
-To run in the Proxmox VE Shell, on existing containers.
+Each tool does one task and can be run on its own, at any time:
+
+- Container tools act on an existing container, for example to give it one of the host's devices. The device tools are the same scripts the Devices category of the settings menu runs when creating a container.
+- Host tools act on the Proxmox VE host itself.
+
+Run them in the Shell of the Proxmox VE host (node > Shell), with the command given on each tool's page.
+
+### Container tools
 
 | Tool | Description |
 |---|---|
 | [GPU device](docs/tools/lxc-gpu.md) | Gives a container the host's GPU for hardware acceleration (video transcoding, camera streams, AI features) |
 | [TUN device](docs/tools/lxc-tun.md) | Gives a container the host's TUN device (VPNs and other network tunnels) |
 | [USB serial devices](docs/tools/lxc-usb-serial.md) | Gives a container the host's USB serial devices (Zigbee or Z-Wave keys, modems, UPS cables...) |
+
+### Host tools
+
+| Tool | Description |
+|---|---|
+| [Post install](docs/tools/pve-post-install.md) | Prepares a Proxmox VE 9 host from a single checklist: no-subscription repository and no subscription popup, high availability off on a single node, update |
 
 ## Background
 

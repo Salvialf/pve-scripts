@@ -13,7 +13,7 @@ variables() {
   newt_colors                                   # whiptail palette from the ct script's var_color_*
 }
 
-# Banner and palette of the tools/ scripts, TOOL_NAME is what the tool gives to a container
+# Banner and palette of the tools
 tool_variables() {
   TOOL_NAME="$1"
   BACKTITLE="Salvialf PVE scripts - $1"

@@ -1,242 +1,166 @@
 #!/usr/bin/env bash
-
+COMMON_FUNC=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/common.func) || { echo "Unable to download common.func"; exit 1; }
+source /dev/stdin <<< "$COMMON_FUNC"
 # Copyright (c) 2021-2024 tteck
-# Author: tteck (tteckster)
-# License: MIT
-# https://github.com/tteck/Proxmox/raw/main/LICENSE
+# Copyright (c) 2026 Salvialf
+# Author: tteck (tteckster) | Salvialf
+# License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
-header_info() {
-  clear
-  cat <<"EOF"
+LOGO=$(cat <<"EOF"
     ____ _    ________   ____             __     ____           __        ____
    / __ \ |  / / ____/  / __ \____  _____/ /_   /  _/___  _____/ /_____ _/ / /
   / /_/ / | / / __/    / /_/ / __ \/ ___/ __/   / // __ \/ ___/ __/ __ `/ / /
  / ____/| |/ / /___   / ____/ /_/ (__  ) /_   _/ // / / (__  ) /_/ /_/ / / /
 /_/     |___/_____/  /_/    \____/____/\__/  /___/_/ /_/____/\__/\__,_/_/_/
-
 EOF
-}
-
-RD=$(echo "\033[01;31m")
-YW=$(echo "\033[33m")
-GN=$(echo "\033[1;92m")
-CL=$(echo "\033[m")
-BFR="\\r\\033[K"
-HOLD="-"
-CM="${GN}✓${CL}"
-CROSS="${RD}✗${CL}"
-
-set -euo pipefail
-shopt -s inherit_errexit nullglob
-
-msg_info() {
-  local msg="$1"
-  echo -ne " ${HOLD} ${YW}${msg}..."
-}
-
-msg_ok() {
-  local msg="$1"
-  echo -e "${BFR} ${CM} ${GN}${msg}${CL}"
-}
-
-msg_error() {
-  local msg="$1"
-  echo -e "${BFR} ${CROSS} ${RD}${msg}${CL}"
-}
-
-start_routines() {
-  header_info
-
-  CHOICE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "SOURCES" --menu "The package manager will use the correct sources to update and install packages on your Proxmox VE server.\n \nCorrect Proxmox VE sources?" 14 58 2 \
-    "yes" " " \
-    "no" " " 3>&2 2>&1 1>&3)
-  case $CHOICE in
-  yes)
-    msg_info "Correcting Proxmox VE Sources"
-    cat <<EOF >/etc/apt/sources.list
-deb http://deb.debian.org/debian bookworm main contrib
-deb http://deb.debian.org/debian bookworm-updates main contrib
-deb http://security.debian.org/debian-security bookworm-security main contrib
-EOF
-echo 'APT::Get::Update::SourceListWarnings::NonFreeFirmware "false";' >/etc/apt/apt.conf.d/no-bookworm-firmware.conf
-    msg_ok "Corrected Proxmox VE Sources"
-    ;;
-  no)
-    msg_error "Selected no to Correcting Proxmox VE Sources"
-    ;;
-  esac
-
-  CHOICE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "PVE-ENTERPRISE" --menu "The 'pve-enterprise' repository is only available to users who have purchased a Proxmox VE subscription.\n \nDisable 'pve-enterprise' repository?" 14 58 2 \
-    "yes" " " \
-    "no" " " 3>&2 2>&1 1>&3)
-  case $CHOICE in
-  yes)
-    msg_info "Disabling 'pve-enterprise' repository"
-    cat <<EOF >/etc/apt/sources.list.d/pve-enterprise.list
-# deb https://enterprise.proxmox.com/debian/pve bookworm pve-enterprise
-EOF
-    msg_ok "Disabled 'pve-enterprise' repository"
-    ;;
-  no)
-    msg_error "Selected no to Disabling 'pve-enterprise' repository"
-    ;;
-  esac
-
-  CHOICE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "PVE-NO-SUBSCRIPTION" --menu "The 'pve-no-subscription' repository provides access to all of the open-source components of Proxmox VE.\n \nEnable 'pve-no-subscription' repository?" 14 58 2 \
-    "yes" " " \
-    "no" " " 3>&2 2>&1 1>&3)
-  case $CHOICE in
-  yes)
-    msg_info "Enabling 'pve-no-subscription' repository"
-    cat <<EOF >/etc/apt/sources.list.d/pve-install-repo.list
-deb http://download.proxmox.com/debian/pve bookworm pve-no-subscription
-EOF
-    msg_ok "Enabled 'pve-no-subscription' repository"
-    ;;
-  no)
-    msg_error "Selected no to Enabling 'pve-no-subscription' repository"
-    ;;
-  esac
-
-    CHOICE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "CEPH PACKAGE REPOSITORIES" --menu "The 'Ceph Package Repositories' provides access to both the 'no-subscription' and 'enterprise' repositories (initially disabled).\n \nCorrect 'ceph package sources?" 14 58 2 \
-      "yes" " " \
-      "no" " " 3>&2 2>&1 1>&3)
-    case $CHOICE in
-    yes)
-      msg_info "Correcting 'ceph package repositories'"
-      cat <<EOF >/etc/apt/sources.list.d/ceph.list
-# deb https://enterprise.proxmox.com/debian/ceph-quincy bookworm enterprise
-# deb http://download.proxmox.com/debian/ceph-quincy bookworm no-subscription
-# deb https://enterprise.proxmox.com/debian/ceph-reef bookworm enterprise
-# deb http://download.proxmox.com/debian/ceph-reef bookworm no-subscription
-EOF
-      msg_ok "Corrected 'ceph package repositories'"
-      ;;
-    no)
-      msg_error "Selected no to Correcting 'ceph package repositories'"
-      ;;
-    esac
-
-  CHOICE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "PVETEST" --menu "The 'pvetest' repository can give advanced users access to new features and updates before they are officially released.\n \nAdd (Disabled) 'pvetest' repository?" 14 58 2 \
-    "yes" " " \
-    "no" " " 3>&2 2>&1 1>&3)
-  case $CHOICE in
-  yes)
-    msg_info "Adding 'pvetest' repository and set disabled"
-    cat <<EOF >/etc/apt/sources.list.d/pvetest-for-beta.list
-# deb http://download.proxmox.com/debian/pve bookworm pvetest
-EOF
-    msg_ok "Added 'pvetest' repository"
-    ;;
-  no)
-    msg_error "Selected no to Adding 'pvetest' repository"
-    ;;
-  esac
-
-  if [[ ! -f /etc/apt/apt.conf.d/no-nag-script ]]; then
-    CHOICE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "SUBSCRIPTION NAG" --menu "This will disable the nag message reminding you to purchase a subscription every time you log in to the web interface.\n \nDisable subscription nag?" 14 58 2 \
-      "yes" " " \
-      "no" " " 3>&2 2>&1 1>&3)
-    case $CHOICE in
-    yes)
-      whiptail --backtitle "Proxmox VE Helper Scripts" --msgbox --title "Support Subscriptions" "Supporting the software's development team is essential. Check their official website's Support Subscriptions for pricing. Without their dedicated work, we wouldn't have this exceptional software." 10 58
-      msg_info "Disabling subscription nag"
-        echo "DPkg::Post-Invoke { \"dpkg -V proxmox-widget-toolkit | grep -q '/proxmoxlib\.js$'; if [ \$? -eq 1 ]; then { echo 'Removing subscription nag from UI...'; sed -i '/.*data\.status.*{/{s/\!//;s/active/NoMoreNagging/}' /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js; }; fi\"; };" >/etc/apt/apt.conf.d/no-nag-script
-      apt --reinstall install proxmox-widget-toolkit &>/dev/null
-      msg_ok "Disabled subscription nag (Delete browser cache)"
-      ;;
-    no)
-      whiptail --backtitle "Proxmox VE Helper Scripts" --msgbox --title "Support Subscriptions" "Supporting the software's development team is essential. Check their official website's Support Subscriptions for pricing. Without their dedicated work, we wouldn't have this exceptional software." 10 58
-      msg_error "Selected no to Disabling subscription nag"
-      ;;
-    esac
-  fi
-
-  if ! systemctl is-active --quiet pve-ha-lrm; then
-    CHOICE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "HIGH AVAILABILITY" --menu "Enable high availability?" 10 58 2 \
-      "yes" " " \
-      "no" " " 3>&2 2>&1 1>&3)
-    case $CHOICE in
-    yes)
-      msg_info "Enabling high availability"
-      systemctl enable -q --now pve-ha-lrm
-      systemctl enable -q --now pve-ha-crm
-      systemctl enable -q --now corosync
-      msg_ok "Enabled high availability"
-      ;;
-    no)
-      msg_error "Selected no to Enabling high availability"
-      ;;
-    esac
-  fi
-  
-  if systemctl is-active --quiet pve-ha-lrm; then
-    CHOICE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "HIGH AVAILABILITY" --menu "If you plan to utilize a single node instead of a clustered environment, you can disable unnecessary high availability (HA) services, thus reclaiming system resources.\n\nIf HA becomes necessary at a later stage, the services can be re-enabled.\n\nDisable high availability?" 18 58 2 \
-      "yes" " " \
-      "no" " " 3>&2 2>&1 1>&3)
-    case $CHOICE in
-    yes)
-      msg_info "Disabling high availability"
-      systemctl disable -q --now pve-ha-lrm
-      systemctl disable -q --now pve-ha-crm
-      systemctl disable -q --now corosync
-      msg_ok "Disabled high availability"
-      ;;
-    no)
-      msg_error "Selected no to Disabling high availability"
-      ;;
-    esac
-  fi
-  
-  CHOICE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "UPDATE" --menu "\nUpdate Proxmox VE now?" 11 58 2 \
-    "yes" " " \
-    "no" " " 3>&2 2>&1 1>&3)
-  case $CHOICE in
-  yes)
-    msg_info "Updating Proxmox VE (Patience)"
-    apt-get update &>/dev/null
-    apt-get -y dist-upgrade &>/dev/null
-    msg_ok "Updated Proxmox VE"
-    ;;
-  no)
-    msg_error "Selected no to Updating Proxmox VE"
-    ;;
-  esac
-
-  CHOICE=$(whiptail --backtitle "Proxmox VE Helper Scripts" --title "REBOOT" --menu "\nReboot Proxmox VE now? (recommended)" 11 58 2 \
-    "yes" " " \
-    "no" " " 3>&2 2>&1 1>&3)
-  case $CHOICE in
-  yes)
-    msg_info "Rebooting Proxmox VE"
-    sleep 2
-    msg_ok "Completed Post Install Routines"
-    reboot
-    ;;
-  no)
-    msg_error "Selected no to Rebooting Proxmox VE (Reboot recommended)"
-    msg_ok "Completed Post Install Routines"
-    ;;
-  esac
-}
-
+)
 header_info
-echo -e "\nThis script will Perform Post Install Routines.\n"
-while true; do
-  read -p "Start the Proxmox VE Post Install Script (y/n)?" yn
-  case $yn in
-  [Yy]*) break ;;
-  [Nn]*) clear; exit ;;
-  *) echo "Please answer yes or no." ;;
-  esac
-done
+tool_variables "Post install"
+color
+catch_errors
+pve_check
+root_check
 
-if ! pveversion | grep -Eq "pve-manager/8.[0-2]"; then
-  msg_error "This version of Proxmox Virtual Environment is not supported"
-  echo -e "Requires Proxmox Virtual Environment Version 8.0 or later."
-  echo -e "Exiting..."
-  sleep 2
-  exit
+if ! pveversion | grep -q "pve-manager/9\."; then
+  msg_error "This tool requires Proxmox VE 9, upgrade first"
+  exit 1
 fi
 
-start_routines
+# No spinner over apt's output: dpkg may ask about a configuration file changed on this host
+VERBOSE="yes"
+
+# The API behind the APT Repositories panel, so the files are changed as its buttons would
+REPOS_API=/nodes/localhost/apt/repositories
+PROXMOXLIB=/usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+# The usual hook name of post-install scripts, so ours replaces an older one
+NAG_HOOK=/etc/apt/apt.conf.d/no-nag-script
+NAG_SCRIPT=/usr/local/sbin/pve-scripts-no-nag
+
+# Enabled entries served by enterprise.proxmox.com, one "file index" line each
+enterprise_repos() {
+  pvesh get "$REPOS_API" --output-format json | perl -MJSON::PP -0777 -ne '
+    for my $file (@{decode_json($_)->{files}}) {
+      my $index = 0;
+      for my $repo (@{$file->{repositories}}) {
+        print "$file->{path} $index\n" if $repo->{Enabled} && grep { m{^https://enterprise\.proxmox\.com/} } @{$repo->{URIs}};
+        $index++;
+      }
+    }'
+}
+
+subscription_active() {
+  pvesh get /nodes/localhost/subscription --output-format json | perl -MJSON::PP -0777 -ne '
+    exit(decode_json($_)->{status} !~ /^active$/i)'
+}
+
+nosub_enabled() {
+  pvesh get "$REPOS_API" --output-format json | perl -MJSON::PP -0777 -ne '
+    exit !grep { $_->{handle} eq "no-subscription" && $_->{status} } @{decode_json($_)->{"standard-repos"}}'
+}
+
+# HA can do nothing on a single node, and without HA resources the watchdog is not armed
+ha_removable() {
+  [ ! -f /etc/pve/corosync.conf ] || return 1
+  [ -z "$(ha-manager config)" ] || return 1
+  systemctl is-enabled -q pve-ha-lrm || systemctl is-enabled -q pve-ha-crm
+}
+
+items=()
+# With a subscription, the enterprise repositories work and the popup doesn't show
+if ! subscription_active; then
+  enterprise=$(enterprise_repos)
+  if [ -n "$enterprise" ]; then
+    items+=(enterprise "Disable the enterprise repositories" ON)
+  fi
+  if ! nosub_enabled; then
+    items+=(nosub "Enable the no-subscription repository" ON)
+  fi
+  if ! grep -qF "$NAG_SCRIPT" "$NAG_HOOK" 2>/dev/null; then
+    items+=(nag "Remove the subscription popup" ON)
+  fi
+fi
+if ha_removable; then
+  items+=(ha "Disable high availability (single node)" ON)
+fi
+items+=(update "Update Proxmox VE" ON)
+
+selected=$(wt --title "${TOOL_NAME^^}" --notags --separate-output --checklist "Choose what to apply\nUse Space to check or uncheck an item" "${items[@]}") || exit-script
+if [ -z "$selected" ]; then
+  exit-script
+fi
+chosen() {
+  grep -qx "$1" <<< "$selected"
+}
+
+if chosen enterprise; then
+  while read -r path index; do
+    pvesh create "$REPOS_API" --path "$path" --index "$index" --enabled 0 >/dev/null
+  done <<< "$enterprise"
+  msg_ok "Disabled the enterprise repositories"
+fi
+
+if chosen nosub; then
+  pvesh set "$REPOS_API" --handle no-subscription >/dev/null
+  msg_ok "Enabled the no-subscription repository"
+fi
+
+if chosen nag; then
+  cat >"$NAG_SCRIPT" <<'EOF'
+#!/bin/sh
+# Installed by pve-scripts' pve-post-install, run by apt after each package change
+# The subscription popup comes from checked_command: make it run the requested action right away
+JS=/usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+FUNC="checked_command: function (orig_cmd) {"
+PATCH="orig_cmd(); return; /* pve-scripts no-nag */"
+grep -qF "$PATCH" "$JS" && exit 0
+if ! grep -qF "$FUNC" "$JS"; then
+  echo "pve-scripts-no-nag: checked_command not found, subscription popup not removed"
+  exit 0
+fi
+sed -i "s|$FUNC|& $PATCH|" "$JS"
+EOF
+  chmod 755 "$NAG_SCRIPT"
+  echo "DPkg::Post-Invoke { \"$NAG_SCRIPT\"; };" >"$NAG_HOOK"
+  # The NoMoreNagging patch of other post-install scripts also hides the APT panel's warning: start again from Proxmox's file
+  if grep -q NoMoreNagging "$PROXMOXLIB"; then
+    apt-get update -qq
+    apt-get install --reinstall -y -qq proxmox-widget-toolkit
+  fi
+  "$NAG_SCRIPT"
+  msg_ok "Removed the subscription popup"
+fi
+
+if chosen ha; then
+  systemctl disable -q --now pve-ha-lrm pve-ha-crm
+  msg_ok "Disabled high availability"
+fi
+
+updated=""
+if chosen update; then
+  msg_info "Updating Proxmox VE"
+  # dpkg records every installed package in this file
+  packages=$(md5sum /var/lib/dpkg/status)
+  apt-get update
+  apt-get -y dist-upgrade
+  if [ "$(md5sum /var/lib/dpkg/status)" != "$packages" ]; then
+    updated="yes"
+    msg_ok "Updated Proxmox VE"
+  else
+    msg_ok "Proxmox VE was already up to date"
+  fi
+fi
+
+if chosen nag; then
+  msg_warn "Reload the web interface without cache (Ctrl+F5) to stop seeing the popup"
+fi
+if chosen ha; then
+  msg_warn "If this node joins a cluster, enable high availability again with: systemctl enable --now pve-ha-crm pve-ha-lrm"
+fi
+if [ -n "$updated" ]; then
+  if wt --title "${TOOL_NAME^^}" --yesno "Reboot Proxmox VE now?\nRecommended after an update"; then
+    msg_ok "Rebooting Proxmox VE"
+    reboot
+  else
+    msg_warn "Reboot Proxmox VE later to complete the update"
+  fi
+fi
