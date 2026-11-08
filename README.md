@@ -33,6 +33,8 @@ The script creates the container, then installs the app inside it. Before creati
 
 To update an existing container, run `update` from its console. Each app page says what it updates.
 
+To change a setting after creation, see [Changing settings later](docs/settings.md).
+
 As with any script found online, read it before running it on your host.
 
 ## Containers
