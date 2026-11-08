@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-
 # Copyright (c) 2021-2024 tteck
 # Author: tteck (tteckster)
-# License: MIT
-# https://github.com/tteck/Proxmox/raw/main/LICENSE
+# Modified by: Salvialf
+# License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
+# Source: https://caddyserver.com/
 
 source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
 color
@@ -14,12 +14,16 @@ network_check
 update_os
 
 msg_info "Installing Dependencies"
-$STD apt-get install -y {debian-keyring,debian-archive-keyring,apt-transport-https,gpg,curl,sudo,mc}
+$STD apt-get install -y \
+  curl \
+  gpg \
+  sudo
 msg_ok "Installed Dependencies"
 
 msg_info "Installing Caddy"
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' >/etc/apt/sources.list.d/caddy-stable.list
+curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor >/usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt >/etc/apt/sources.list.d/caddy-stable.list
+chmod o+r /usr/share/keyrings/caddy-stable-archive-keyring.gpg /etc/apt/sources.list.d/caddy-stable.list
 $STD apt-get update
 $STD apt-get install -y caddy
 msg_ok "Installed Caddy"

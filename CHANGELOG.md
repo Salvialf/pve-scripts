@@ -10,6 +10,7 @@
 
 - [Post install tool](docs/tools/pve-post-install.md) to prepare a Proxmox VE 9 host from a single checklist: no-subscription repository and no subscription popup when the host has no subscription, high availability off on a single node, update.
 - [AdGuard Home container](docs/lxc/adguard-home.md), installed and updated with AdGuard's own tools.
+- [Caddy container](docs/lxc/caddy.md), installed from Caddy's official repository. `update` refreshes the repository key first, so updates no longer stop when it expires.
 
 ### Fixed
 
