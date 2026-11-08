@@ -15,6 +15,7 @@
 ### Changed
 
 - The Debian and Ubuntu versions of the settings menu are no longer a fixed list: they follow Proxmox's templates, a release showing up or going away with its template.
+- The login banner no longer shows the hostname, already in the prompt.
 
 ### Fixed
 

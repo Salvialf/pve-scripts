@@ -202,7 +202,6 @@ EOF
   esac
   printf '\n\033[1;33m%s LXC\033[m, by pve-scripts\n' "$APP"
   line OS "$(. /etc/os-release && echo "$PRETTY_NAME")"
-  line Hostname "$(uname -n)"
   ip=$(ip -4 route get 1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p')
   line IP "${ip:-none}"
   line Memory "$(free -h | awk '/^Mem:/ {print $3 " used of " $2}')"
