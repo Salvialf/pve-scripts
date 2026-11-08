@@ -90,10 +90,10 @@ function app_summary() {
   echo "Jeedom branch: $JEEDOM_BRANCH"
 }
 
-# Temporary Debian 13 check until https://github.com/jeedom/core/pull/3483 is on master
+# Temporary Debian check until https://github.com/jeedom/core/pull/3483 is on master
 function app_check() {
-  if [ "$var_version" == "13" ] && [[ "$JEEDOM_BRANCH" =~ ^(master|release)$ ]]; then
-    wt --title "JEEDOM BRANCH" --msgbox "Jeedom's master and release branches don't support Debian 13 yet\nChoose Debian 12 or the develop branch"
+  if [ "$var_version" != "12" ] && [[ "$JEEDOM_BRANCH" =~ ^(master|release)$ ]]; then
+    wt --title "JEEDOM BRANCH" --msgbox "Jeedom's master and release branches only support Debian 12 for now\nChoose Debian 12 or the develop branch"
     return 1
   fi
 }

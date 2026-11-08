@@ -29,7 +29,7 @@ At the end, the script shows the URL of the Jeedom interface. The default login 
 | Jeedom branch | `master` |
 
 > [!NOTE]
-> Debian 13 is available in the General settings, but not yet compatible with the `master` and `release` branches.
+> Other Debian versions are available in the General settings, but the `master` and `release` branches only support Debian 12 for now.
 
 ## Jeedom branch
 
