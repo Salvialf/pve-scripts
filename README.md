@@ -42,6 +42,7 @@ As with any script found online, read it before running it on your host.
 | App | Description |
 |---|---|
 | [AdGuard Home](docs/lxc/adguard-home.md) | DNS server that blocks ads and trackers for the whole network |
+| [Alpine](docs/lxc/alpine.md) | Minimal Alpine container |
 | [Caddy](docs/lxc/caddy.md) | Web server and reverse proxy with automatic HTTPS |
 | [Debian](docs/lxc/debian.md) | Minimal Debian container |
 | [Jeedom](docs/lxc/jeedom.md) | Jeedom home automation software |

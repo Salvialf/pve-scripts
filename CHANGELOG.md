@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-09
+
+### Added
+
+- [Alpine container](docs/lxc/alpine.md), a minimal base using few resources (256 MiB of RAM, 0.5 GiB of disk).
+
 ## 2026-11-08
 
 ### Added

@@ -148,7 +148,7 @@ disk_space_warning() {
 # step_* functions: one settings window each for run_steps, returning 0 Next, 1 Back, 255 ESC or 2 when nothing is shown
 
 step_distribution() {
-  if [ "$var_os" == "alpine" ] || [ "${var_os_locked:-no}" == "yes" ]; then
+  if [ "${var_os_locked:-no}" == "yes" ]; then
     return 2
   fi
   local os
@@ -847,7 +847,7 @@ run_tool() {
 # Creates and starts the container, then runs install/<app>-install.sh inside it
 build_container() {
   # nesting on privileged containers too: systemd fails without it
-  local net0 features="nesting=1" install_func
+  local net0 features="nesting=1" install_file install_func i
   if [ "$UNPRIVILEGED" == "1" ] && [ "$DOCKER_SUPPORT" == "yes" ]; then
     features+=",keyctl=1"
   fi
@@ -855,15 +855,16 @@ build_container() {
   TEMP_DIR=$(mktemp -d)
   pushd $TEMP_DIR >/dev/null
   if [ "$var_os" == "alpine" ]; then
-    export FUNCTIONS_FILE_PATH="$(curl -s https://raw.githubusercontent.com/tteck/Proxmox/main/misc/alpine-install.func)"
+    install_file="alpine-install.func"
   else
-    install_func=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/debian-install.func) || {
-      msg_error "Unable to download debian-install.func"
-      exit 1
-    }
-    # The ct script's common.func, the same version as the host's
-    export FUNCTIONS_FILE_PATH="$COMMON_FUNC"$'\n'"$install_func"
+    install_file="debian-install.func"
   fi
+  install_func=$(curl -fsSL "https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/$install_file") || {
+    msg_error "Unable to download $install_file"
+    exit 1
+  }
+  # The ct script's common.func, the same version as the host's
+  export FUNCTIONS_FILE_PATH="$COMMON_FUNC"$'\n'"$install_func"
   # Read by the install functions inside the container
   export APP APP_SLUG TIMEZONE ROOT_PASSWORD ROOT_SSH DISABLE_IPV6 APT_CACHER VERBOSE
 
@@ -912,15 +913,16 @@ build_container() {
   if [ -d "$ROOTFS_MP" ] && [ "$(stat -c '%U' "$ROOTFS_MP")" != "root" ]; then
     chown root:root "$ROOTFS_MP" 2>/dev/null || true
   fi
+  # The install script runs in bash, missing from the Alpine template; apk needs the network, which can take a while
   if [ "$var_os" == "alpine" ]; then
-    sleep 3
-        pct exec "$CT_ID" -- /bin/sh -c 'cat <<EOF >/etc/apk/repositories
-http://dl-cdn.alpinelinux.org/alpine/latest-stable/main
-http://dl-cdn.alpinelinux.org/alpine/latest-stable/community
-#http://dl-cdn.alpinelinux.org/alpine/v3.19/main
-#http://dl-cdn.alpinelinux.org/alpine/v3.19/community
-EOF'
-    pct exec "$CT_ID" -- ash -c "apk add bash >/dev/null"
+    for ((i = 10; i > 0; i--)); do
+      pct exec "$CT_ID" -- apk add bash >/dev/null 2>&1 && break
+      sleep 3
+    done
+    if [ "$i" -eq 0 ]; then
+      msg_error "Unable to install bash in the container, check its network settings"
+      exit 1
+    fi
   fi
   lxc-attach -n "$CT_ID" -- bash -c "$(wget -qLO - https://raw.githubusercontent.com/Salvialf/pve-scripts/main/install/${APP_SLUG}-install.sh)" || exit
 
