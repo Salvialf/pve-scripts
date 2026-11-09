@@ -34,7 +34,6 @@ setting_up_container() {
     msg_error "No network after $retry_num tries, check the network settings"
     exit 1
   fi
-  rm -rf /usr/lib/python3.*/EXTERNALLY-MANAGED
   systemctl disable -q --now systemd-networkd-wait-online.service
   msg_ok "Set up Container OS"
   msg_ok "Network Connected: ${BL}$(hostname -I)"
@@ -59,7 +58,6 @@ EOF
   $STD apt-get -o Dpkg::Options::="--force-confold" -y dist-upgrade
   # Used by the app installs and the update command
   $STD apt-get install -y curl
-  rm -rf /usr/lib/python3.*/EXTERNALLY-MANAGED
   msg_ok "Updated Container OS"
 }
 

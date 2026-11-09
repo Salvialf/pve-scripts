@@ -13,6 +13,7 @@
 ### Changed
 
 - The scripts no longer install `sudo` in new containers: nothing used it, everything runs as root.
+- In new Debian and Ubuntu containers, `pip install` outside a Python virtual environment is refused again, as on a standard Debian.
 
 ## 2026-11-08
 
