@@ -1,97 +1,39 @@
-color() {
-  YW=$(echo "\033[33m")
-  BL=$(echo "\033[36m")
-  RD=$(echo "\033[01;31m")
-  BGN=$(echo "\033[4;92m")
-  GN=$(echo "\033[1;92m")
-  DGN=$(echo "\033[32m")
-  CL=$(echo "\033[m")
-  RETRY_NUM=10
-  RETRY_EVERY=3
-  i=$RETRY_NUM
-  CM="${GN}✓${CL}"
-  CROSS="${RD}✗${CL}"
-  BFR="\\r\\033[K"
-  HOLD="-"
-}
+#!/usr/bin/env bash
+# Copyright (c) 2021-2024 tteck
+# Copyright (c) 2026 Salvialf
+# Author: tteck (tteckster) | Salvialf
+# License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
+# Verbose mode and the IPv6 setting, applied again at each boot by OpenRC's sysctl service
 verb_ip6() {
-  if [ "$VERBOSE" = "yes" ]; then
-    STD=""
-  else STD="silent"; fi
-  silent() { "$@" >/dev/null 2>&1; }
-  if [ "$DISABLEIPV6" == "yes" ]; then
-    $STD sysctl -w net.ipv6.conf.all.disable_ipv6=1
-    echo "net.ipv6.conf.all.disable_ipv6 = 1" >>/etc/sysctl.conf
-    $STD rc-update add sysctl default
+  std_mode
+  if [ "$DISABLE_IPV6" == "yes" ]; then
+    printf "net.ipv6.conf.all.disable_ipv6 = 1\nnet.ipv6.conf.default.disable_ipv6 = 1\n" >/etc/sysctl.d/99-disable-ipv6.conf
+    $STD sysctl -e -p /etc/sysctl.d/99-disable-ipv6.conf
+    $STD rc-update add sysctl boot
   fi
 }
 
-catch_errors() {
-  set -Eeuo pipefail
-  trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
-}
-
-error_handler() {
-  local exit_code="$?"
-  local line_number="$1"
-  local command="$2"
-  local error_message="${RD}[ERROR]${CL} in line ${RD}$line_number${CL}: exit code ${RD}$exit_code${CL}: while executing command ${YW}$command${CL}"
-  echo -e "\n$error_message\n"
-}
-
-msg_info() {
-  local msg="$1"
-  echo -ne " ${HOLD} ${YW}${msg}..."
-}
-
-msg_ok() {
-  local msg="$1"
-  echo -e "${BFR} ${CM} ${GN}${msg}${CL}"
-}
-
-msg_error() {
-  local msg="$1"
-  echo -e "${BFR} ${CROSS} ${RD}${msg}${CL}"
-}
-
+# Waits for the container to get an IPv4 address, then the timezone (tzdata comes from the network)
 setting_up_container() {
+  local retry_num=10 retry_every=3 i ipv4=""
   msg_info "Setting up Container OS"
-  while [ $i -gt 0 ]; do
-    if [ "$(ip addr show | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | cut -d'/' -f1)" != "" ]; then
+  for ((i = retry_num; i > 0; i--)); do
+    ipv4=$(ip -4 route get 1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p') || true
+    if [ -n "$ipv4" ]; then
       break
     fi
-    echo 1>&2 -en "${CROSS}${RD} No Network! "
-    sleep $RETRY_EVERY
-    i=$((i - 1))
+    sleep $retry_every
   done
-
-  if [ "$(ip addr show | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | cut -d'/' -f1)" = "" ]; then
-    echo 1>&2 -e "\n${CROSS}${RD} No Network After $RETRY_NUM Tries${CL}"
-    echo -e " 🖧  Check Network Settings"
+  if [ -z "$ipv4" ]; then
+    msg_error "No network after $retry_num tries, check the network settings"
     exit 1
   fi
+  $STD apk add tzdata
+  echo "$TIMEZONE" >/etc/timezone
+  ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
   msg_ok "Set up Container OS"
-  msg_ok "Network Connected: ${BL}$(ip addr show | grep 'inet ' | awk '{print $2}' | cut -d'/' -f1 | tail -n1)${CL}"
-}
-
-network_check() {
-  set +e
-  trap - ERR
-  if ping -c 1 -W 1 1.1.1.1 &>/dev/null; then msg_ok "Internet Connected"; else
-    msg_error "Internet NOT Connected"
-    read -r -p "Would you like to continue anyway? <y/N> " prompt
-    if [[ "${prompt,,}" =~ ^(y|yes)$ ]]; then
-      echo -e " ⚠️  ${RD}Expect Issues Without Internet${CL}"
-    else
-      echo -e " 🖧  Check Network Settings"
-      exit 1
-    fi
-  fi
-  RESOLVEDIP=$(getent hosts github.com | awk '{ print $1 }')
-  if [[ -z "$RESOLVEDIP" ]]; then msg_error "DNS Lookup Failure"; else msg_ok "DNS Resolved github.com to ${BL}$RESOLVEDIP${CL}"; fi
-  set -e
-  trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
+  msg_ok "Network Connected: ${BL}$ipv4"
 }
 
 update_os() {
@@ -101,20 +43,34 @@ update_os() {
   msg_ok "Updated Container OS"
 }
 
+# Login banner, and root SSH access when chosen (the template has no SSH server)
 motd_ssh() {
-  echo "export TERM='xterm-256color'" >>/root/.bashrc
-  echo -e "$APPLICATION LXC provided by https://tteck.github.io/Proxmox/\n" >/etc/motd
-  if [[ "${SSH_ROOT}" == "yes" ]]; then
-    $STD rc-update add sshd
+  echo "export TERM='xterm-256color'" >>/root/.profile
+  login_banner
+  : >/etc/motd
+  if [[ "${ROOT_SSH}" == "yes" ]]; then
+    $STD apk add openssh
     sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/g" /etc/ssh/sshd_config
-    $STD /etc/init.d/sshd start
+    $STD rc-update add sshd
+    $STD rc-service sshd start
   fi
 }
 
+# Console autologin when there is no root password, root stays locked; and the in-container update command
 customize() {
-  if [[ "$PASSWORD" == "" ]]; then
-  msg_info "Customizing Container"
-  bash -c "passwd -d root" >/dev/null 2>&1
-  msg_ok "Customized Container"
+  if [[ "$ROOT_PASSWORD" == "" ]]; then
+    msg_info "Customizing Container"
+    printf '#!/bin/sh\nexec /bin/login -f root\n' >/usr/local/bin/autologin
+    chmod +x /usr/local/bin/autologin
+    sed -i 's|^tty1:.*|tty1::respawn:/sbin/getty -n -l /usr/local/bin/autologin 38400 tty1|' /etc/inittab
+    # Proxmox rewrites the getty lines of inittab at each start, unless this file exists
+    touch /etc/.pve-ignore.inittab
+    # init reloads inittab, the old tty1 getty is stopped so the new one takes its place
+    kill -HUP 1
+    pkill -f '^/sbin/getty 38400 tty1$' || true
+    msg_ok "Customized Container"
   fi
+  $STD apk add curl newt
+  echo "bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/${APP_SLUG}.sh)\"" >/usr/bin/update
+  chmod +x /usr/bin/update
 }
