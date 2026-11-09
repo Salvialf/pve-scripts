@@ -32,14 +32,17 @@ color
 catch_errors
 
 function update_script() {
-if [[ ! -f /etc/caddy/Caddyfile ]]; then msg_error "No ${APP} Installation Found!"; exit; fi
-msg_info "Updating $APP LXC"
-# Caddy renews its repository key: a copy kept from the install would end up expired and block its updates
-curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor >/usr/share/keyrings/caddy-stable-archive-keyring.gpg
-apt-get update &>/dev/null
-apt-get -y upgrade &>/dev/null
-msg_ok "Updated $APP LXC"
-exit
+  if [[ ! -f /etc/caddy/Caddyfile ]]; then
+    msg_error "No ${APP} installation found"
+    exit 1
+  fi
+  msg_info "Updating $APP LXC"
+  # Caddy renews its repository key: a copy kept from the install would end up expired and block its updates
+  curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor >/usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  apt-get update &>/dev/null
+  apt-get -y upgrade &>/dev/null
+  msg_ok "Updated $APP LXC"
+  exit
 }
 
 start

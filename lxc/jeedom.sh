@@ -103,13 +103,16 @@ function jeedom_branch_exists() {
 }
 
 function update_script() {
-if [[ ! -f /var/www/html/core/config/version ]]; then msg_error "No ${APP} Installation Found!"; exit; fi
-msg_info "Updating $APP LXC OS packages"
-apt-get update &>/dev/null
-apt-get -y upgrade &>/dev/null
-msg_ok "Updated $APP LXC OS packages"
-echo -e "You can now update Jeedom itself from its Web UI."
-exit
+  if [[ ! -f /var/www/html/core/config/version ]]; then
+    msg_error "No ${APP} installation found"
+    exit 1
+  fi
+  msg_info "Updating $APP LXC OS packages"
+  apt-get update &>/dev/null
+  apt-get -y upgrade &>/dev/null
+  msg_ok "Updated $APP LXC OS packages"
+  echo -e "You can now update Jeedom itself from its Web UI."
+  exit
 }
 
 # JEEDOM_BRANCH can be passed on the command line, catch a typo before creating anything

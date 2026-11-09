@@ -30,27 +30,30 @@ color
 catch_errors
 
 function update_script() {
-if [[ ! -d /opt/zwave-js-ui ]]; then msg_error "No ${APP} Installation Found!"; exit; fi
-msg_info "Updating $APP LXC OS packages"
-apt-get update &>/dev/null
-apt-get -y upgrade &>/dev/null
-msg_ok "Updated $APP LXC OS packages"
-local release
-release=$(curl -fsSL https://api.github.com/repos/zwave-js/zwave-js-ui/releases/latest | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4)
-if [ "$release" == "$(cat /opt/zwave-js-ui/version 2>/dev/null)" ]; then
-  msg_ok "$APP is already up to date ($release)"
+  if [[ ! -d /opt/zwave-js-ui ]]; then
+    msg_error "No ${APP} installation found"
+    exit 1
+  fi
+  msg_info "Updating $APP LXC OS packages"
+  apt-get update &>/dev/null
+  apt-get -y upgrade &>/dev/null
+  msg_ok "Updated $APP LXC OS packages"
+  local release
+  release=$(curl -fsSL https://api.github.com/repos/zwave-js/zwave-js-ui/releases/latest | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4)
+  if [ "$release" == "$(cat /opt/zwave-js-ui/version 2>/dev/null)" ]; then
+    msg_ok "$APP is already up to date ($release)"
+    exit
+  fi
+  msg_info "Updating $APP to $release"
+  curl -fsSL -o /tmp/zwave-js-ui.zip "https://github.com/zwave-js/zwave-js-ui/releases/download/${release}/zwave-js-ui-${release}-linux.zip"
+  systemctl stop zwave-js-ui
+  rm -rf /opt/zwave-js-ui
+  unzip -q /tmp/zwave-js-ui.zip -d /opt/zwave-js-ui
+  rm /tmp/zwave-js-ui.zip
+  echo "$release" >/opt/zwave-js-ui/version
+  systemctl start zwave-js-ui
+  msg_ok "Updated $APP to $release"
   exit
-fi
-msg_info "Updating $APP to $release"
-curl -fsSL -o /tmp/zwave-js-ui.zip "https://github.com/zwave-js/zwave-js-ui/releases/download/${release}/zwave-js-ui-${release}-linux.zip"
-systemctl stop zwave-js-ui
-rm -rf /opt/zwave-js-ui
-unzip -q /tmp/zwave-js-ui.zip -d /opt/zwave-js-ui
-rm /tmp/zwave-js-ui.zip
-echo "$release" >/opt/zwave-js-ui/version
-systemctl start zwave-js-ui
-msg_ok "Updated $APP to $release"
-exit
 }
 
 start

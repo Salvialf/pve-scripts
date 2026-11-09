@@ -30,11 +30,11 @@ color
 catch_errors
 
 function update_script() {
-msg_info "Updating $APP LXC"
-apk update &>/dev/null
-apk upgrade &>/dev/null
-msg_ok "Updated $APP LXC"
-exit
+  msg_info "Updating $APP LXC"
+  apk update &>/dev/null
+  apk upgrade &>/dev/null
+  msg_ok "Updated $APP LXC"
+  exit
 }
 
 start

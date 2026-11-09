@@ -31,19 +31,22 @@ color
 catch_errors
 
 function update_script() {
-if [[ ! -x /opt/AdGuardHome/AdGuardHome ]]; then msg_error "No ${APP} Installation Found!"; exit; fi
-msg_info "Updating $APP LXC OS packages"
-apt-get update &>/dev/null
-apt-get -y upgrade &>/dev/null
-msg_ok "Updated $APP LXC OS packages"
-msg_info "Updating $APP"
-output=$(/opt/AdGuardHome/AdGuardHome --update 2>&1)
-if grep -q "no updates available" <<< "$output"; then
-  msg_ok "$APP is already up to date"
-else
-  msg_ok "Updated $APP"
-fi
-exit
+  if [[ ! -x /opt/AdGuardHome/AdGuardHome ]]; then
+    msg_error "No ${APP} installation found"
+    exit 1
+  fi
+  msg_info "Updating $APP LXC OS packages"
+  apt-get update &>/dev/null
+  apt-get -y upgrade &>/dev/null
+  msg_ok "Updated $APP LXC OS packages"
+  msg_info "Updating $APP"
+  output=$(/opt/AdGuardHome/AdGuardHome --update 2>&1)
+  if grep -q "no updates available" <<< "$output"; then
+    msg_ok "$APP is already up to date"
+  else
+    msg_ok "Updated $APP"
+  fi
+  exit
 }
 
 start
