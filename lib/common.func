@@ -246,7 +246,7 @@ EOF
   line OS "$(. /etc/os-release && echo "$PRETTY_NAME")"
   ip=$(ip -4 route get 1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p')
   line IP "${ip:-none}"
-  line Memory "$(free -h | awk '/^Mem:/ {print $3 " used of " $2}')"
+  line Memory "$(awk 'function h(k) {return k >= 1048576 ? sprintf("%.1fG", k / 1048576) : sprintf("%dM", k / 1024)} /^MemTotal:/ {t = $2} /^MemAvailable:/ {a = $2} END {print h(t - a) " used of " h(t)}' /proc/meminfo)"
   line Disk "$(df -hP / | awk 'NR==2 {print $3 " used of " $2 " (" $5 ")"}')"
   line Uptime "$(awk '{printf "%dd %dh %dm\n", $1 / 86400, $1 % 86400 / 3600, $1 % 3600 / 60}' /proc/uptime)"
   echo
