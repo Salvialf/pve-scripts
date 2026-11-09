@@ -852,8 +852,6 @@ build_container() {
     features+=",keyctl=1"
   fi
 
-  TEMP_DIR=$(mktemp -d)
-  pushd $TEMP_DIR >/dev/null
   if [ "$var_os" == "alpine" ]; then
     install_file="alpine-install.func"
   else
