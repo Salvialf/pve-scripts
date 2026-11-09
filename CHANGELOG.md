@@ -10,6 +10,10 @@
 
 - [Alpine container](docs/lxc/alpine.md), a minimal base using few resources (256 MiB of RAM, 0.5 GiB of disk).
 
+### Changed
+
+- The scripts no longer install `sudo` in new containers: nothing used it, everything runs as root.
+
 ## 2026-11-08
 
 ### Added

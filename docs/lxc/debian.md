@@ -26,7 +26,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/mai
 
 > [!NOTE]
 > Other Debian versions are available in the General settings.
-> `curl` and `sudo` are installed on top of the Debian template.
+> `curl` is installed on top of the Debian template.
 
 ## Devices
 

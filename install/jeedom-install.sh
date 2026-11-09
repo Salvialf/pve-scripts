@@ -18,7 +18,7 @@ msg_ok "Installing Jeedom from branch: ${JEEDOM_BRANCH}"
 
 msg_info "Downloading Jeedom installation script"
 cd /tmp
-wget -q https://raw.githubusercontent.com/jeedom/core/"${JEEDOM_BRANCH}"/install/install.sh
+curl -fsSL -o install.sh https://raw.githubusercontent.com/jeedom/core/"${JEEDOM_BRANCH}"/install/install.sh
 chmod +x install.sh
 msg_ok "Installation script downloaded"
 

@@ -57,6 +57,8 @@ EOF
   fi
   $STD apt-get update
   $STD apt-get -o Dpkg::Options::="--force-confold" -y dist-upgrade
+  # Used by the app installs and the update command
+  $STD apt-get install -y curl
   rm -rf /usr/lib/python3.*/EXTERNALLY-MANAGED
   msg_ok "Updated Container OS"
 }
@@ -89,6 +91,6 @@ EOF
     systemctl restart $(basename $(dirname $GETTY_OVERRIDE) | sed 's/\.d//')
     msg_ok "Customized Container"
   fi
-  echo "bash -c \"\$(wget -qLO - https://github.com/Salvialf/pve-scripts/raw/main/lxc/${APP_SLUG}.sh)\"" >/usr/bin/update
+  echo "bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/${APP_SLUG}.sh)\"" >/usr/bin/update
   chmod +x /usr/bin/update
 }

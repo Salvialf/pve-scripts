@@ -14,10 +14,7 @@ network_check
 update_os
 
 msg_info "Installing Dependencies"
-$STD apt-get install -y \
-  curl \
-  sudo \
-  unzip
+$STD apt-get install -y unzip
 msg_ok "Installed Dependencies"
 
 msg_info "Installing Z-Wave JS UI"

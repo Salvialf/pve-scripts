@@ -924,7 +924,7 @@ build_container() {
       exit 1
     fi
   fi
-  lxc-attach -n "$CT_ID" -- bash -c "$(wget -qLO - https://raw.githubusercontent.com/Salvialf/pve-scripts/main/install/${APP_SLUG}-install.sh)" || exit
+  lxc-attach -n "$CT_ID" -- bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/install/${APP_SLUG}-install.sh)" || exit
 
 }
 

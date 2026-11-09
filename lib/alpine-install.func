@@ -40,6 +40,8 @@ update_os() {
   msg_info "Updating Container OS"
   $STD apk update
   $STD apk upgrade
+  # Used by the app installs and the update command
+  $STD apk add curl
   msg_ok "Updated Container OS"
 }
 
@@ -70,7 +72,7 @@ customize() {
     pkill -f '^/sbin/getty 38400 tty1$' || true
     msg_ok "Customized Container"
   fi
-  $STD apk add curl newt
+  $STD apk add newt
   echo "bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/${APP_SLUG}.sh)\"" >/usr/bin/update
   chmod +x /usr/bin/update
 }

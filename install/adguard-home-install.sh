@@ -13,12 +13,6 @@ setting_up_container
 network_check
 update_os
 
-msg_info "Installing Dependencies"
-$STD apt-get install -y \
-  curl \
-  sudo
-msg_ok "Installed Dependencies"
-
 msg_info "Installing AdGuard Home"
 curl -fsSL https://static.adtidy.org/adguardhome/release/AdGuardHome_linux_amd64.tar.gz | tar -xz -C /opt
 # AdGuard Home creates and starts its own service, as its official install script does
