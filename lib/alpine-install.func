@@ -72,7 +72,8 @@ customize() {
     pkill -f '^/sbin/getty 38400 tty1$' || true
     msg_ok "Customized Container"
   fi
-  $STD apk add newt
+  # whiptail, and tput for its colors, used by the update command
+  $STD apk add newt ncurses
   echo "bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/${APP_SLUG}.sh)\"" >/usr/bin/update
   chmod +x /usr/bin/update
 }
