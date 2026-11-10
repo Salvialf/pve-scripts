@@ -7,10 +7,15 @@
 # Regex ranges like [a-z] stay ASCII whatever the locale, not exported to the commands
 LC_COLLATE=C
 
-variables() {
+# Run by every lxc script after its APP and var_* settings
+init_script() {
+  header_info
+  echo -e "Loading..."
   APP_SLUG=$(echo ${APP,,} | tr -d ' ') # default hostname and install/<slug>-install.sh name
   BACKTITLE="Salvialf PVE scripts - ${APP} LXC" # shown on every whiptail window
   newt_colors                                   # whiptail palette from the ct script's var_color_*
+  color
+  catch_errors
 }
 
 # Banner and palette of the tools
@@ -421,8 +426,8 @@ wt() {
   return "$rc"
 }
 
-# Creates the container on a Proxmox host, runs the app's update inside the container
-start() {
+# Creates the container on a Proxmox host or runs the app's update inside the container
+create_or_update() {
   local build_func
   if command -v pveversion >/dev/null 2>&1; then
     build_func=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/build.func) || {
@@ -431,9 +436,13 @@ start() {
     }
     source /dev/stdin <<< "$build_func"
     install_script
+    build_container
+    description
+    msg_ok "Completed Successfully!\n"
   else
     header_info
     wt --title "UPDATE CONTAINER" --yesno "This will update the ${APP} LXC. Proceed?" || exit-script
     update_script
+    exit
   fi
 }

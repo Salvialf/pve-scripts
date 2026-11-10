@@ -15,8 +15,6 @@ LOGO=$(cat <<"EOF"
 \____/\___/\___/\__,_/\____/_/ /_/ /_/
 EOF
 )
-header_info
-echo -e "Loading..."
 APP="Jeedom"
 var_disk="16"
 var_cpu="2"
@@ -32,9 +30,7 @@ var_color_theme="dark"
 app_settings=(step_jeedom_branch step_jeedom_other_branch)
 # From the command line, if any
 DEFAULT_JEEDOM_BRANCH="${JEEDOM_BRANCH:-master}"
-variables
-color
-catch_errors
+init_script
 
 function step_jeedom_branch() {
   local choice="${JEEDOM_BRANCH_CHOICE:-$DEFAULT_JEEDOM_BRANCH}"
@@ -112,7 +108,6 @@ function update_script() {
   apt-get -y upgrade &>/dev/null
   msg_ok "Updated $APP LXC OS packages"
   echo -e "You can now update Jeedom itself from its Web UI."
-  exit
 }
 
 # JEEDOM_BRANCH can be passed on the command line, catch a typo before creating anything
@@ -121,11 +116,7 @@ if [ -n "${JEEDOM_BRANCH:-}" ] && ! jeedom_branch_exists "$JEEDOM_BRANCH"; then
   exit 1
 fi
 
-start
-build_container
-description
-
-msg_ok "Completed Successfully!\n"
+create_or_update
 echo -e "Access ${APP} at the following URL:
          ${BL}http://$(get_ip)${CL}
          Default login: ${BL}admin${CL}/${BL}admin${CL}\n"

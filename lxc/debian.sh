@@ -14,8 +14,6 @@ LOGO=$(cat <<"EOF"
 /_____/\___/_.___/_/\__,_/_/ /_/
 EOF
 )
-header_info
-echo -e "Loading..."
 APP="Debian"
 var_disk="4"
 var_cpu="1"
@@ -24,20 +22,13 @@ var_os="debian"
 var_os_locked="yes"
 var_version="13"
 var_color_primary="color125"
-variables
-color
-catch_errors
+init_script
 
 function update_script() {
   msg_info "Updating $APP LXC"
   apt-get update &>/dev/null
   apt-get -y upgrade &>/dev/null
   msg_ok "Updated $APP LXC"
-  exit
 }
 
-start
-build_container
-description
-
-msg_ok "Completed Successfully!\n"
+create_or_update

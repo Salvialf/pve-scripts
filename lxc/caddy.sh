@@ -16,8 +16,6 @@ LOGO=$(cat <<"EOF"
                        /____/
 EOF
 )
-header_info
-echo -e "Loading..."
 APP="Caddy"
 var_disk="2"
 var_cpu="1"
@@ -27,9 +25,7 @@ var_version="13"
 var_onboot="yes"
 var_color_primary="color35"
 var_color_theme="dark"
-variables
-color
-catch_errors
+init_script
 
 function update_script() {
   if [[ ! -f /etc/caddy/Caddyfile ]]; then
@@ -42,13 +38,8 @@ function update_script() {
   apt-get update &>/dev/null
   apt-get -y upgrade &>/dev/null
   msg_ok "Updated $APP LXC"
-  exit
 }
 
-start
-build_container
-description
-
-msg_ok "Completed Successfully!\n"
+create_or_update
 echo -e "Caddy's default page is at the following URL:
          ${BL}http://$(get_ip)${CL}\n"

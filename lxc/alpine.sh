@@ -15,8 +15,6 @@ LOGO=$(cat <<"EOF"
         /_/
 EOF
 )
-header_info
-echo -e "Loading..."
 APP="Alpine"
 var_disk="0.5"
 var_cpu="1"
@@ -25,20 +23,13 @@ var_os="alpine"
 var_os_locked="yes"
 var_version="3.24"
 var_color_primary="color24"
-variables
-color
-catch_errors
+init_script
 
 function update_script() {
   msg_info "Updating $APP LXC"
   apk update &>/dev/null
   apk upgrade &>/dev/null
   msg_ok "Updated $APP LXC"
-  exit
 }
 
-start
-build_container
-description
-
-msg_ok "Completed Successfully!\n"
+create_or_update

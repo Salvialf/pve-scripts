@@ -16,8 +16,6 @@ LOGO=$(cat <<"EOF"
                      /_/
 EOF
 )
-header_info
-echo -e "Loading..."
 APP="Mosquitto"
 var_disk="2"
 var_cpu="1"
@@ -27,9 +25,7 @@ var_version="13"
 var_onboot="yes"
 var_color_primary="color24"
 app_settings=(step_mosquitto_user step_mosquitto_password)
-variables
-color
-catch_errors
+init_script
 
 function step_mosquitto_user() {
   local user="$MOSQUITTO_USER"
@@ -89,14 +85,9 @@ function update_script() {
   apt-get update &>/dev/null
   apt-get -y upgrade &>/dev/null
   msg_ok "Updated $APP LXC"
-  exit
 }
 
-start
-build_container
-description
-
-msg_ok "Completed Successfully!\n"
+create_or_update
 echo -e "Connect the MQTT clients to the following address:
          ${BL}$(get_ip):1883${CL}
          User: ${BL}${MOSQUITTO_USER}${CL}\n"

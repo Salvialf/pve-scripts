@@ -14,8 +14,6 @@ LOGO=$(cat <<"EOF"
 \____/_.___/\__,_/_/ /_/\__/\__,_/
 EOF
 )
-header_info
-echo -e "Loading..."
 APP="Ubuntu"
 var_disk="4"
 var_cpu="1"
@@ -24,20 +22,13 @@ var_os="ubuntu"
 var_os_locked="yes"
 var_version="26.04"
 var_color_primary="color166"
-variables
-color
-catch_errors
+init_script
 
 function update_script() {
   msg_info "Updating $APP LXC"
   apt-get update &>/dev/null
   apt-get -y upgrade &>/dev/null
   msg_ok "Updated $APP LXC"
-  exit
 }
 
-start
-build_container
-description
-
-msg_ok "Completed Successfully!\n"
+create_or_update
