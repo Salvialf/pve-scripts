@@ -885,6 +885,10 @@ download_install_files() {
     msg_error "Unable to download $install_file"
     exit 1
   }
+  INSTALL_SCRIPT=$(curl -fsSL "https://raw.githubusercontent.com/Salvialf/pve-scripts/main/install/${APP_SLUG}-install.sh") || {
+    msg_error "Unable to download ${APP_SLUG}-install.sh"
+    exit 1
+  }
 }
 
 # Device settings, applied before the first start
@@ -929,7 +933,7 @@ run_install() {
       exit 1
     fi
   fi
-  lxc-attach -n "$CT_ID" -- bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/install/${APP_SLUG}-install.sh)" || exit
+  lxc-attach -n "$CT_ID" -- bash -c "$INSTALL_SCRIPT" || exit
 }
 
 # Creates and starts the container, then runs install/<app>-install.sh inside it

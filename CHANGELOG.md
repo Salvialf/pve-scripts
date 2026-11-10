@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-10
+
+### Fixed
+
+- A failed download of the app's install script no longer ends in a false success: the script now stops before creating the container.
+
 ## 2026-11-09
 
 ### Added
