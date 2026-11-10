@@ -15,12 +15,12 @@ verb_ip6() {
 }
 
 # Timezone, tzdata is missing from the Alpine template
-setting_up_container() {
-  msg_info "Setting up Container OS"
+configure_os() {
+  msg_info "Configuring Container OS"
   $STD apk add tzdata
   echo "$TIMEZONE" >/etc/timezone
   ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
-  msg_ok "Set up Container OS"
+  msg_ok "Configured Container OS"
 }
 
 update_os() {

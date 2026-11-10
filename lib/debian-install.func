@@ -14,8 +14,8 @@ verb_ip6() {
 }
 
 # Locale and timezone
-setting_up_container() {
-  msg_info "Setting up Container OS"
+configure_os() {
+  msg_info "Configuring Container OS"
   sed -i "/$LANG/ s/\(^# \)//" /etc/locale.gen
   locale_line=$(grep -v '^#' /etc/locale.gen | grep -E '^[a-zA-Z]' | awk '{print $1}' | head -n 1)
   echo "LANG=${locale_line}" >/etc/default/locale
@@ -24,7 +24,7 @@ setting_up_container() {
   echo $TIMEZONE >/etc/timezone
   ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
   systemctl disable -q --now systemd-networkd-wait-online.service
-  msg_ok "Set up Container OS"
+  msg_ok "Configured Container OS"
 }
 
 # apt goes through the APT-Cacher while it answers, directly otherwise
