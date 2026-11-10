@@ -913,12 +913,12 @@ start_container() {
 wait_for_network() {
   local i ip=""
   msg_info "Waiting for the network"
-  for ((i = 10; i > 0; i--)); do
+  for ((i = 30; i > 0; i--)); do
     ip=$(get_ip 2>/dev/null) || true
     if [ -n "$ip" ]; then
       break
     fi
-    sleep 3
+    sleep 1
   done
   if [ -z "$ip" ]; then
     msg_error "No IPv4 address after 30 seconds, check the network settings"
@@ -927,12 +927,25 @@ wait_for_network() {
   msg_ok "Network Connected: ${BL}$ip"
 }
 
+# The first answers can come a few seconds after the address shows up
+ct_ping() {
+  local i
+  for ((i = 5; i > 0; i--)); do
+    if pct exec "$CT_ID" -- "$@" &>/dev/null; then
+      return 0
+    fi
+    if [ "$i" -gt 1 ]; then
+      sleep 1
+    fi
+  done
+  return 1
+}
+
 # Internet over IPv4, required by the install, IPv6 only reported, then DNS
 network_check() {
   local prompt resolved_ip
   msg_info "Checking Internet access"
-  sleep 1
-  if pct exec "$CT_ID" -- ping -c 1 -W 1 1.1.1.1 &>/dev/null; then
+  if ct_ping ping -c 1 -W 1 1.1.1.1; then
     msg_ok "IPv4 Internet connected"
   else
     msg_error "No IPv4 Internet access, ping to 1.1.1.1 failed"
@@ -942,7 +955,7 @@ network_check() {
     fi
   fi
   if [ "$DISABLE_IPV6" != "yes" ]; then
-    if pct exec "$CT_ID" -- ping6 -c 1 -W 1 2606:4700:4700::1111 &>/dev/null; then
+    if ct_ping ping6 -c 1 -W 1 2606:4700:4700::1111; then
       msg_ok "IPv6 Internet connected"
     else
       msg_warn "No IPv6 Internet access"
