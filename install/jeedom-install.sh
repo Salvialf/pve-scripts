@@ -6,11 +6,7 @@
 # Source: https://jeedom.com/
 
 source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
-color
-verb_ip6
-catch_errors
-setting_up_container
-update_os
+prepare_container
 
 # JEEDOM_BRANCH is exported by lxc/jeedom.sh
 msg_ok "Installing Jeedom from branch: ${JEEDOM_BRANCH}"
@@ -68,11 +64,6 @@ $STD ./install.sh -v "$JEEDOM_BRANCH" -s 12
 # Temporary reboot hint until https://github.com/jeedom/core/pull/3544 is on master
 msg_ok "Installation checked, a reboot is recommended"
 
-motd_ssh
-customize
-
-msg_info "Cleaning up"
 rm -f /tmp/install.sh
-$STD apt-get -y autoremove
-$STD apt-get -y autoclean
-msg_ok "Cleaned"
+
+finish_container

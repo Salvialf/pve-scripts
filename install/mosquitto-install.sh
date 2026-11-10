@@ -6,11 +6,7 @@
 # Source: https://mosquitto.org/
 
 source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
-color
-verb_ip6
-catch_errors
-setting_up_container
-update_os
+prepare_container
 
 msg_info "Installing Mosquitto"
 $STD apt-get install -y \
@@ -31,10 +27,4 @@ chown mosquitto:mosquitto /etc/mosquitto/passwd
 systemctl restart mosquitto
 msg_ok "Created MQTT user ${MOSQUITTO_USER}"
 
-motd_ssh
-customize
-
-msg_info "Cleaning up"
-$STD apt-get -y autoremove
-$STD apt-get -y autoclean
-msg_ok "Cleaned"
+finish_container

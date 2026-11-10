@@ -49,6 +49,13 @@ EOF
   msg_ok "Updated Container OS"
 }
 
+clean_os() {
+  msg_info "Cleaning up"
+  $STD apt-get -y autoremove
+  $STD apt-get -y autoclean
+  msg_ok "Cleaned"
+}
+
 # Login banner, and root SSH access when chosen
 motd_ssh() {
   echo "export TERM='xterm-256color'" >>/root/.bashrc

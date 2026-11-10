@@ -181,6 +181,22 @@ silent() {
   return $status
 }
 
+# Run by every install script before the app's own steps, with the family's install functions
+prepare_container() {
+  color
+  verb_ip6
+  catch_errors
+  setting_up_container
+  update_os
+}
+
+# Run by every install script after the app's own steps
+finish_container() {
+  motd_ssh
+  customize
+  clean_os
+}
+
 # Login banner read at each login, so the IP, disk and OS stay current; sh and BusyBox compatible, for Alpine
 login_banner() {
   cat <<EOF >/etc/profile.d/pve-scripts-motd.sh

@@ -32,6 +32,10 @@ update_os() {
   msg_ok "Updated Container OS"
 }
 
+clean_os() {
+  :
+}
+
 # Login banner, and root SSH access when chosen (the template has no SSH server)
 motd_ssh() {
   echo "export TERM='xterm-256color'" >>/root/.profile

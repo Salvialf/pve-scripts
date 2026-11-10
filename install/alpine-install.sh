@@ -5,11 +5,5 @@
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
 source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
-color
-verb_ip6
-catch_errors
-setting_up_container
-update_os
-
-motd_ssh
-customize
+prepare_container
+finish_container
