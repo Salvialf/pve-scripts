@@ -18,13 +18,17 @@ init_script() {
   catch_errors
 }
 
-# Banner and palette of the tools
-tool_variables() {
-  TOOL_NAME="$1"
-  BACKTITLE="Salvialf PVE scripts - $1"
+# Run by every tool after its TOOL_NAME setting, the tools share one palette
+init_tool() {
+  header_info
+  BACKTITLE="Salvialf PVE scripts - $TOOL_NAME"
   var_color_primary="color220"
   var_color_theme="dark"
   newt_colors
+  color
+  catch_errors
+  pve_check
+  root_check
 }
 
 # The container comes from CT_ID, else from a menu of the host's containers

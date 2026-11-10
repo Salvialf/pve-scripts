@@ -13,12 +13,8 @@ LOGO=$(cat <<"EOF"
 \____/_/    \____/  /_____/\___/|___/_/\___/\___/
 EOF
 )
-header_info
-tool_variables "GPU device"
-color
-catch_errors
-pve_check
-root_check
+TOOL_NAME="GPU device"
+init_tool
 
 # The render node is all video transcoding and AI apps need, card0 would also give the host's display
 GPU_DEVICE="${GPU_DEVICE:-}"

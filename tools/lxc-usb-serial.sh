@@ -13,12 +13,8 @@ LOGO=$(cat <<"EOF"
 \____//____/_____/   /____/\___/_/  /_/\__,_/_/
 EOF
 )
-header_info
-tool_variables "USB serial devices"
-color
-catch_errors
-pve_check
-root_check
+TOOL_NAME="USB serial devices"
+init_tool
 
 # Names that stay the same across reboots and replugs, unlike ttyACM0 or ttyUSB0
 USB_DEVICES="${USB_DEVICES:-}"

@@ -14,12 +14,8 @@ LOGO=$(cat <<"EOF"
 /_/     |___/_____/  /_/    \____/____/\__/  /___/_/ /_/____/\__/\__,_/_/_/
 EOF
 )
-header_info
-tool_variables "Post install"
-color
-catch_errors
-pve_check
-root_check
+TOOL_NAME="Post install"
+init_tool
 
 if ! pveversion | grep -q "pve-manager/9\."; then
   msg_error "This tool requires Proxmox VE 9, upgrade first"

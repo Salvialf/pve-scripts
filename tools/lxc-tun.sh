@@ -13,12 +13,8 @@ LOGO=$(cat <<"EOF"
 /_/  \____/_/ |_/  /_____/\___/|___/_/\___/\___/
 EOF
 )
-header_info
-tool_variables "TUN device"
-color
-catch_errors
-pve_check
-root_check
+TOOL_NAME="TUN device"
+init_tool
 tool_choose_ct
 
 # The Proxmox wiki's lines (folder mount) and tteck's (file mount)
