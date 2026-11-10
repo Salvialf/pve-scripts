@@ -927,25 +927,11 @@ wait_for_network() {
   msg_ok "Network Connected: ${BL}$ip"
 }
 
-# The first answers can come a few seconds after the address shows up
-ct_ping() {
-  local i
-  for ((i = 5; i > 0; i--)); do
-    if pct exec "$CT_ID" -- "$@" &>/dev/null; then
-      return 0
-    fi
-    if [ "$i" -gt 1 ]; then
-      sleep 1
-    fi
-  done
-  return 1
-}
-
 # Internet over IPv4, required by the install, IPv6 only reported, then DNS
 network_check() {
   local prompt resolved_ip
   msg_info "Checking Internet access"
-  if ct_ping ping -c 1 -W 1 1.1.1.1; then
+  if ct_exec ping -c 1 -W 1 1.1.1.1 &>/dev/null; then
     msg_ok "IPv4 Internet connected"
   else
     msg_error "No IPv4 Internet access, ping to 1.1.1.1 failed"
@@ -955,13 +941,13 @@ network_check() {
     fi
   fi
   if [ "$DISABLE_IPV6" != "yes" ]; then
-    if ct_ping ping6 -c 1 -W 1 2606:4700:4700::1111; then
+    if ct_exec ping6 -c 1 -W 1 2606:4700:4700::1111 &>/dev/null; then
       msg_ok "IPv6 Internet connected"
     else
       msg_warn "No IPv6 Internet access"
     fi
   fi
-  resolved_ip=$(pct exec "$CT_ID" -- getent hosts github.com | awk '{ print $1; exit }') || true
+  resolved_ip=$(ct_exec getent hosts github.com | awk '{ print $1; exit }') || true
   if [ -z "$resolved_ip" ]; then
     msg_error "Unable to resolve github.com, check the DNS settings"
     exit 1
@@ -975,7 +961,7 @@ run_install() {
   # Read by the install functions inside the container
   export APP APP_SLUG TIMEZONE ROOT_PASSWORD ROOT_SSH DISABLE_IPV6 APT_CACHER VERBOSE
   # The install script runs in bash, missing from the Alpine template
-  if [ "$var_os" == "alpine" ] && ! pct exec "$CT_ID" -- apk add bash >/dev/null 2>&1; then
+  if [ "$var_os" == "alpine" ] && ! ct_exec apk add bash &>/dev/null; then
     msg_error "Unable to install bash in the container, check its network settings"
     exit 1
   fi
@@ -993,8 +979,13 @@ build_container() {
   run_install
 }
 
+# With the terminal as input, lxc-attach can kill the command with SIGHUP when its output goes elsewhere
+ct_exec() {
+  pct exec "$CT_ID" -- "$@" </dev/null
+}
+
 get_ip() {
-  pct exec "$CT_ID" ip a s dev eth0 | awk '/inet / {print $2}' | cut -d/ -f1
+  ct_exec ip a s dev eth0 | awk '/inet / {print $2}' | cut -d/ -f1
 }
 
 description() {
