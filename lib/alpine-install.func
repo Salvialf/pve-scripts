@@ -14,26 +14,13 @@ verb_ip6() {
   fi
 }
 
-# Waits for the container to get an IPv4 address, then the timezone (tzdata comes from the network)
+# Timezone, tzdata is missing from the Alpine template
 setting_up_container() {
-  local retry_num=10 retry_every=3 i ipv4=""
   msg_info "Setting up Container OS"
-  for ((i = retry_num; i > 0; i--)); do
-    ipv4=$(ip -4 route get 1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p') || true
-    if [ -n "$ipv4" ]; then
-      break
-    fi
-    sleep $retry_every
-  done
-  if [ -z "$ipv4" ]; then
-    msg_error "No network after $retry_num tries, check the network settings"
-    exit 1
-  fi
   $STD apk add tzdata
   echo "$TIMEZONE" >/etc/timezone
   ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
   msg_ok "Set up Container OS"
-  msg_ok "Network Connected: ${BL}$ipv4"
 }
 
 update_os() {

@@ -916,22 +916,32 @@ start_container() {
   fi
 }
 
+wait_for_network() {
+  local i ip=""
+  msg_info "Waiting for the network"
+  for ((i = 10; i > 0; i--)); do
+    ip=$(get_ip 2>/dev/null) || true
+    if [ -n "$ip" ]; then
+      break
+    fi
+    sleep 3
+  done
+  if [ -z "$ip" ]; then
+    msg_error "No IPv4 address after 30 seconds, check the network settings"
+    exit 1
+  fi
+  msg_ok "Network Connected: ${BL}$ip"
+}
+
 run_install() {
-  local i
   # The ct script's common.func, the same version as the host's
   export FUNCTIONS_FILE_PATH="$COMMON_FUNC"$'\n'"$INSTALL_FUNC"
   # Read by the install functions inside the container
   export APP APP_SLUG TIMEZONE ROOT_PASSWORD ROOT_SSH DISABLE_IPV6 APT_CACHER VERBOSE
-  # The install script runs in bash, missing from the Alpine template; apk needs the network, which can take a while
-  if [ "$var_os" == "alpine" ]; then
-    for ((i = 10; i > 0; i--)); do
-      pct exec "$CT_ID" -- apk add bash >/dev/null 2>&1 && break
-      sleep 3
-    done
-    if [ "$i" -eq 0 ]; then
-      msg_error "Unable to install bash in the container, check its network settings"
-      exit 1
-    fi
+  # The install script runs in bash, missing from the Alpine template
+  if [ "$var_os" == "alpine" ] && ! pct exec "$CT_ID" -- apk add bash >/dev/null 2>&1; then
+    msg_error "Unable to install bash in the container, check its network settings"
+    exit 1
   fi
   lxc-attach -n "$CT_ID" -- bash -c "$INSTALL_SCRIPT" || exit
 }
@@ -942,6 +952,7 @@ build_container() {
   create_container
   add_devices
   start_container
+  wait_for_network
   run_install
 }
 
