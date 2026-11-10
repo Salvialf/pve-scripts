@@ -10,7 +10,6 @@ color
 verb_ip6
 catch_errors
 setting_up_container
-network_check
 update_os
 
 # JEEDOM_BRANCH is exported by lxc/jeedom.sh

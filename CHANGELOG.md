@@ -6,6 +6,10 @@
 
 ## 2026-11-10
 
+### Changed
+
+- At creation, a network without IPv6 only gets a warning, and a DNS failure stops the script right away.
+
 ### Fixed
 
 - A failed download of the app's install script no longer ends in a false success: the script now stops before creating the container.

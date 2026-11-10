@@ -181,49 +181,6 @@ silent() {
   return $status
 }
 
-# Internet access over IPv4 and IPv6, asks whether to go on without it, then DNS
-network_check() {
-  set +e
-  trap - ERR
-  ipv4_connected=false
-  ipv6_connected=false
-  sleep 1
-  if ping -c 1 -W 1 1.1.1.1 &>/dev/null; then
-    msg_ok "IPv4 Internet connected"
-    ipv4_connected=true
-  else
-    msg_error "IPv4 Internet not connected"
-  fi
-
-  if [ "$DISABLE_IPV6" != "yes" ]; then
-    if ping6 -c 1 -W 1 2606:4700:4700::1111 &>/dev/null; then
-      msg_ok "IPv6 Internet connected"
-      ipv6_connected=true
-    else
-      msg_error "IPv6 Internet not connected"
-    fi
-  fi
-
-  if [[ $ipv4_connected == false && $ipv6_connected == false ]]; then
-    read -r -p "No Internet detected, would you like to continue anyway? <y/N> " prompt
-    if [[ "${prompt,,}" =~ ^(y|yes)$ ]]; then
-      msg_warn "Expect issues without Internet"
-    else
-      msg_error "Check the network settings"
-      exit 1
-    fi
-  fi
-
-  RESOLVEDIP=$(getent hosts github.com | awk '{ print $1 }')
-  if [[ -z "$RESOLVEDIP" ]]; then
-    msg_error "DNS lookup failure"
-  else
-    msg_ok "DNS resolved github.com to ${BL}$RESOLVEDIP${CL}"
-  fi
-  set -e
-  trap 'error_handler $LINENO "$BASH_COMMAND"' ERR
-}
-
 # Login banner read at each login, so the IP, disk and OS stay current; sh and BusyBox compatible, for Alpine
 login_banner() {
   cat <<EOF >/etc/profile.d/pve-scripts-motd.sh

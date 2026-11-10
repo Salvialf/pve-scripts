@@ -933,6 +933,35 @@ wait_for_network() {
   msg_ok "Network Connected: ${BL}$ip"
 }
 
+# Internet over IPv4, required by the install, IPv6 only reported, then DNS
+network_check() {
+  local prompt resolved_ip
+  msg_info "Checking Internet access"
+  sleep 1
+  if pct exec "$CT_ID" -- ping -c 1 -W 1 1.1.1.1 &>/dev/null; then
+    msg_ok "IPv4 Internet connected"
+  else
+    msg_error "No IPv4 Internet access, ping to 1.1.1.1 failed"
+    read -r -p "Some networks block ping, continue anyway? <y/N> " prompt
+    if [[ ! "${prompt,,}" =~ ^(y|yes)$ ]]; then
+      exit 1
+    fi
+  fi
+  if [ "$DISABLE_IPV6" != "yes" ]; then
+    if pct exec "$CT_ID" -- ping6 -c 1 -W 1 2606:4700:4700::1111 &>/dev/null; then
+      msg_ok "IPv6 Internet connected"
+    else
+      msg_warn "No IPv6 Internet access"
+    fi
+  fi
+  resolved_ip=$(pct exec "$CT_ID" -- getent hosts github.com | awk '{ print $1; exit }') || true
+  if [ -z "$resolved_ip" ]; then
+    msg_error "Unable to resolve github.com, check the DNS settings"
+    exit 1
+  fi
+  msg_ok "DNS resolved github.com to ${BL}$resolved_ip"
+}
+
 run_install() {
   # The ct script's common.func, the same version as the host's
   export FUNCTIONS_FILE_PATH="$COMMON_FUNC"$'\n'"$INSTALL_FUNC"
@@ -953,6 +982,7 @@ build_container() {
   add_devices
   start_container
   wait_for_network
+  network_check
   run_install
 }
 
