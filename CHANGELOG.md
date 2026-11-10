@@ -12,6 +12,7 @@
 
 ### Fixed
 
+- The install no longer leaves its downloaded packages on the disk of Debian and Ubuntu containers.
 - A failed download of the app's install script no longer ends in a false success: the script now stops before creating the container.
 
 ## 2026-11-09
