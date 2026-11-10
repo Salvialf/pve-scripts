@@ -768,13 +768,7 @@ echo_settings() {
   done <<< "$(settings_summary)"
 }
 
-install_script() {
-  pve_check
-  shell_check
-  root_check
-  arch_check
-  ssh_check
-
+choose_settings() {
   NEXTID=$(pvesh get /cluster/nextid)
   # timedatectl is more reliable than /etc/timezone on newer systemd-based
   # hosts (e.g. Debian 13); fall back to /etc/timezone for older systems

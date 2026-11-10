@@ -434,12 +434,17 @@ wt() {
 create_or_update() {
   local build_func
   if command -v pveversion >/dev/null 2>&1; then
+    pve_check
+    shell_check
+    root_check
+    arch_check
+    ssh_check
     build_func=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/build.func) || {
       msg_error "Unable to download build.func"
       exit 1
     }
     source /dev/stdin <<< "$build_func"
-    install_script
+    choose_settings
     build_container
     description
     msg_ok "Completed Successfully!\n"
