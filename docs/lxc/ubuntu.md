@@ -17,7 +17,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/mai
 
 | Setting | Value |
 |---|---|
-| OS | Ubuntu 26.04 |
+| OS | Latest Ubuntu LTS |
 | CPU | 1 vCPU |
 | RAM | 512 MiB |
 | Disk | 4 GiB |

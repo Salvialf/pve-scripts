@@ -17,7 +17,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/mai
 
 | Setting | Value |
 |---|---|
-| OS | Debian 13 |
+| OS | Latest Debian |
 | CPU | 1 vCPU |
 | RAM | 512 MiB |
 | Disk | 4 GiB |

@@ -21,7 +21,7 @@ At the end, the script shows the address of AdGuard Home's setup wizard, on port
 
 | Setting | Value |
 |---|---|
-| OS | Debian 13 |
+| OS | Latest Debian |
 | CPU | 1 vCPU |
 | RAM | 512 MiB |
 | Disk | 4 GiB |

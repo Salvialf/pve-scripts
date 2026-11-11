@@ -19,7 +19,7 @@ At the end, the script shows the URL of the Z-Wave JS UI interface, on port `809
 
 | Setting | Value |
 |---|---|
-| OS | Debian 13 |
+| OS | Latest Debian |
 | CPU | 2 vCPU |
 | RAM | 1024 MiB |
 | Disk | 4 GiB |

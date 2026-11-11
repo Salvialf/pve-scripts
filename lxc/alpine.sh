@@ -19,9 +19,7 @@ APP="Alpine"
 var_disk="0.5"
 var_cpu="1"
 var_ram="256"
-var_os="alpine"
-var_os_locked="yes"
-var_version="3.24"
+var_os_supported="alpine"
 var_color_primary="color24"
 init_script
 create_or_update

@@ -21,7 +21,7 @@ At the end, the script shows the address of Caddy's default page, on port `80`.
 
 | Setting | Value |
 |---|---|
-| OS | Debian 13 |
+| OS | Latest Debian |
 | CPU | 1 vCPU |
 | RAM | 512 MiB |
 | Disk | 2 GiB |

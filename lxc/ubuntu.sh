@@ -18,9 +18,7 @@ APP="Ubuntu"
 var_disk="4"
 var_cpu="1"
 var_ram="512"
-var_os="ubuntu"
-var_os_locked="yes"
-var_version="26.04"
+var_os_supported="ubuntu"
 var_color_primary="color166"
 init_script
 create_or_update

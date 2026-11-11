@@ -17,7 +17,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/mai
 
 | Setting | Value |
 |---|---|
-| OS | Alpine 3.24 |
+| OS | Latest Alpine |
 | CPU | 1 vCPU |
 | RAM | 256 MiB |
 | Disk | 0.5 GiB |

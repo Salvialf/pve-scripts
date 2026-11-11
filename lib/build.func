@@ -6,6 +6,9 @@
 
 # Disk, CPU, RAM and OS come from the ct script's var_* variables
 default_settings() {
+  # The first supported distribution, in its latest version unless the app needs another
+  var_os="${var_os_supported%% *}"
+  var_os_version="${var_os_version:-$(os_default_version "$var_os")}"
   # Default to the storages the Proxmox VE installer creates
   DEFAULT_TEMPLATE_STORAGE=$(preferred_storage "$TEMPLATE_STORAGE_LIST" local local-btrfs)
   TEMPLATE_STORAGE="$DEFAULT_TEMPLATE_STORAGE"
@@ -148,15 +151,17 @@ disk_space_warning() {
 # step_* functions: one settings window each for run_steps, returning 0 Next, 1 Back, 255 ESC or 2 when nothing is shown
 
 step_distribution() {
-  if [ "${var_os_locked:-no}" == "yes" ]; then
+  local os menu=()
+  for os in $var_os_supported; do
+    menu+=("$os" "${os^}")
+  done
+  # A single distribution: its name and label
+  if [ ${#menu[@]} -eq 2 ]; then
     return 2
   fi
-  local os
-  os=$(wt --title "DISTRIBUTION" --notags --default-item "$var_os" --menu "Choose the distribution" \
-    "debian" "Debian" \
-    "ubuntu" "Ubuntu") || return
+  os=$(wt --title "DISTRIBUTION" --notags --default-item "$var_os" --menu "Choose the distribution" "${menu[@]}") || return
   if [ "$os" != "$var_os" ]; then
-    var_version=$(os_versions "$os" | tail -n 1)
+    var_os_version=$(os_default_version "$os")
   fi
   var_os="$os"
 }
@@ -168,6 +173,15 @@ os_versions() {
     grep "_$(dpkg --print-architecture)\.tar\." |
     sed -n "s/^$1-\([0-9.]*\)-.*/\1/p" |
     sort -uV || true
+}
+
+# Latest version of distribution $1, the latest LTS for Ubuntu: its other releases get 9 months of updates
+os_default_version() {
+  if [ "$1" == "ubuntu" ]; then
+    os_versions ubuntu | grep -E '^[0-9]*[02468]\.04$' | tail -n 1
+  else
+    os_versions "$1" | tail -n 1
+  fi
 }
 
 # "Debian 13 Trixie" from Proxmox's template index, else "Debian 13"
@@ -185,8 +199,8 @@ step_version() {
   if [ ${#menu[@]} -eq 0 ]; then
     return 2
   fi
-  version=$(wt --title "${var_os^^} VERSION" --notags --default-item "$var_version" --menu "Choose the ${var_os^} version" "${menu[@]}") || return
-  var_version="$version"
+  version=$(wt --title "${var_os^^} VERSION" --notags --default-item "$var_os_version" --menu "Choose the ${var_os^} version" "${menu[@]}") || return
+  var_os_version="$version"
 }
 
 step_ct_id() {
@@ -232,7 +246,7 @@ settings_general() {
 }
 
 summary_general() {
-  echo "${var_os^} $var_version, CT $CT_ID, $CT_HOSTNAME, $([ "$UNPRIVILEGED" == "1" ] && echo unprivileged || echo privileged)"
+  echo "${var_os^} $var_os_version, CT $CT_ID, $CT_HOSTNAME, $([ "$UNPRIVILEGED" == "1" ] && echo unprivileged || echo privileged)"
 }
 
 # Asks a password then its confirmation and prints it, $3 being the current one
@@ -724,7 +738,7 @@ settings_menu() {
 # "Label: value" lines, in the steps' order
 settings_summary() {
   echo "Distribution: $var_os"
-  echo "${var_os^} version: $var_version"
+  echo "${var_os^} version: $var_os_version"
   echo "Container ID: $CT_ID"
   echo "Hostname: $CT_HOSTNAME"
   echo "Container type: $([ "$UNPRIVILEGED" == "1" ] && echo Unprivileged || echo Privileged)"
@@ -824,7 +838,7 @@ create_container() {
   pveam update >/dev/null
   msg_ok "Updated LXC template list"
 
-  template_search="${var_os}-${var_version}"
+  template_search="${var_os}-${var_os_version}"
   # Keep only the host's architecture (PVE 9 also lists arm64 templates)
   # || true: with set -E, an error here would be read as a template
   mapfile -t templates < <(

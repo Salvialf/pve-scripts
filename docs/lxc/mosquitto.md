@@ -19,7 +19,7 @@ Set the MQTT user and password in the Mosquitto category of the settings menu: t
 
 | Setting | Value |
 |---|---|
-| OS | Debian 13 |
+| OS | Latest Debian |
 | CPU | 1 vCPU |
 | RAM | 512 MiB |
 | Disk | 2 GiB |

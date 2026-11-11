@@ -19,9 +19,8 @@ APP="Jeedom"
 var_disk="16"
 var_cpu="2"
 var_ram="2048"
-var_os="debian"
-var_os_locked="yes"
-var_version="12"
+var_os_supported="debian"
+var_os_version="12"
 var_onboot="yes"
 var_tun="yes"
 var_tun_note="Jeedom uses it for its DNS service"
@@ -88,7 +87,7 @@ function app_summary() {
 
 # Temporary Debian check until https://github.com/jeedom/core/pull/3483 is on master
 function app_check() {
-  if [ "$var_version" != "12" ] && [[ "$JEEDOM_BRANCH" =~ ^(master|release)$ ]]; then
+  if [ "$var_os_version" != "12" ] && [[ "$JEEDOM_BRANCH" =~ ^(master|release)$ ]]; then
     wt --title "JEEDOM BRANCH" --msgbox "Jeedom's master and release branches only support Debian 12 for now\nChoose Debian 12 or the develop branch"
     return 1
   fi
