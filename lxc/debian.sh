@@ -25,10 +25,7 @@ var_color_primary="color125"
 init_script
 
 function update_script() {
-  msg_info "Updating $APP LXC"
-  apt-get update &>/dev/null
-  apt-get -y upgrade &>/dev/null
-  msg_ok "Updated $APP LXC"
+  update_packages
 }
 
 create_or_update

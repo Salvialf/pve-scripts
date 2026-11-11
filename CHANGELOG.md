@@ -4,6 +4,18 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-11
+
+### Changed
+
+- `update` now also upgrades the packages that need a new dependency, instead of leaving them at their old version. It still never removes a package.
+
+### Fixed
+
+- `update` no longer waits on a hidden question when a package brings a new version of a config file changed in the container: the container's version is kept.
+- `update` no longer leaves its downloaded packages on the disk of Debian and Ubuntu containers.
+- When `update` fails on a package, the end of the package manager's output is now shown.
+
 ## 2026-11-10
 
 ### Changed

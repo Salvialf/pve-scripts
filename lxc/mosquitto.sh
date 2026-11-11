@@ -81,10 +81,7 @@ function update_script() {
     msg_error "No ${APP} installation found"
     exit 1
   fi
-  msg_info "Updating $APP LXC"
-  apt-get update &>/dev/null
-  apt-get -y upgrade &>/dev/null
-  msg_ok "Updated $APP LXC"
+  update_packages
 }
 
 create_or_update

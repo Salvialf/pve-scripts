@@ -30,10 +30,7 @@ function update_script() {
     msg_error "No ${APP} installation found"
     exit 1
   fi
-  msg_info "Updating $APP LXC OS packages"
-  apt-get update &>/dev/null
-  apt-get -y upgrade &>/dev/null
-  msg_ok "Updated $APP LXC OS packages"
+  update_packages
   local release
   release=$(curl -fsSL https://api.github.com/repos/zwave-js/zwave-js-ui/releases/latest | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4)
   if [ "$release" == "$(cat /opt/zwave-js-ui/version 2>/dev/null)" ]; then

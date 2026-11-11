@@ -451,7 +451,22 @@ create_or_update() {
   else
     header_info
     wt --title "UPDATE CONTAINER" --yesno "This will update the ${APP} LXC. Proceed?" || exit-script
+    std_mode
     update_script
     exit
   fi
+}
+
+# Run by update_script: unlike dist-upgrade, never removes a package, and keeps the config files the user changed
+update_packages() {
+  msg_info "Updating OS packages"
+  if [ -f /etc/alpine-release ]; then
+    $STD apk -U upgrade
+  else
+    export DEBIAN_FRONTEND=noninteractive
+    $STD apt-get update
+    $STD apt-get -y --with-new-pkgs -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
+    $STD apt-get clean
+  fi
+  msg_ok "Updated OS packages"
 }

@@ -31,10 +31,7 @@ function update_script() {
     msg_error "No ${APP} installation found"
     exit 1
   fi
-  msg_info "Updating $APP LXC OS packages"
-  apt-get update &>/dev/null
-  apt-get -y upgrade &>/dev/null
-  msg_ok "Updated $APP LXC OS packages"
+  update_packages
   msg_info "Updating $APP"
   output=$(/opt/AdGuardHome/AdGuardHome --update 2>&1)
   if grep -q "no updates available" <<< "$output"; then

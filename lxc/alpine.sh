@@ -26,10 +26,7 @@ var_color_primary="color24"
 init_script
 
 function update_script() {
-  msg_info "Updating $APP LXC"
-  apk update &>/dev/null
-  apk upgrade &>/dev/null
-  msg_ok "Updated $APP LXC"
+  update_packages
 }
 
 create_or_update
