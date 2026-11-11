@@ -285,22 +285,9 @@ msg_warn() {
   echo -e "${BFR} ${YW}⚠ ${msg}${CL}"
 }
 
-shell_check() {
-  if [[ "$(basename "$SHELL")" != "bash" ]]; then
-    clear
-    msg_error "Your default shell is currently not set to Bash. To use these scripts, please switch to the Bash shell."
-    echo -e "\nExiting..."
-    sleep 2
-    exit 1
-  fi
-}
-
 root_check() {
   if [[ "$(id -u)" -ne 0 || $(ps -o comm= -p $PPID) == "sudo" ]]; then
-    clear
     msg_error "Please run this script as root"
-    echo -e "\nExiting..."
-    sleep 2
     exit 1
   fi
 }
@@ -312,20 +299,14 @@ pve_check() {
     exit 1
   fi
   if ! pveversion | grep -Eq "pve-manager/(8\.[1-9]|9\.[0-9])"; then
-    msg_error "This version of Proxmox Virtual Environment is not supported"
-    echo -e "Requires Proxmox Virtual Environment 8.1 to 9.x."
-    echo -e "Exiting..."
-    sleep 2
+    msg_error "This version of Proxmox VE is not supported, it requires 8.1 to 9.x"
     exit 1
   fi
 }
 
 arch_check() {
   if [ "$(dpkg --print-architecture)" != "amd64" ]; then
-    echo -e "\n ${CROSS} This script will not work with PiMox! \n"
-    echo -e "\n Visit https://github.com/asylumexp/Proxmox for ARM64 support. \n"
-    echo -e "Exiting..."
-    sleep 2
+    msg_error "These scripts only support x86-64 (amd64) hosts for now"
     exit 1
   fi
 }
@@ -436,7 +417,6 @@ create_or_update() {
   local build_func
   if command -v pveversion >/dev/null 2>&1; then
     pve_check
-    shell_check
     root_check
     arch_check
     ssh_check

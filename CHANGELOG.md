@@ -10,6 +10,7 @@
 
 - `update` now also upgrades the packages that need a new dependency, instead of leaving them at their old version. It still never removes a package in use, only the dependencies nothing needs anymore.
 - The AdGuard Home update now shows the version it ends on, like Z-Wave JS UI.
+- The scripts no longer refuse to run when the host's default shell isn't Bash: they always run in Bash anyway.
 
 ### Fixed
 
