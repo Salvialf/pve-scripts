@@ -486,6 +486,6 @@ clean_packages() {
   fi
   msg_info "Cleaning up container packages"
   $STD apt-get -y autoremove
-  $STD apt-get -y clean
+  $STD apt-get clean
   msg_ok "Cleaned up container packages"
 }
