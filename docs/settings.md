@@ -2,7 +2,10 @@
 
 Most settings of the settings menu stay in Proxmox VE: change them in the container's pages of the interface (Resources, Network, DNS, Options), as for any container. Devices are added or removed with the [tools](../README.md#tools).
 
-A few settings are applied inside the container when it is created, so the Proxmox VE interface does not show them. To change them later, run these commands in the container's console.
+A few settings are applied inside the container when it is created, so the Proxmox VE interface does not show them. To change them later, run these commands in the container's console, depending on its distribution:
+
+- [Debian and Ubuntu](#debian-and-ubuntu)
+- [Alpine](#alpine)
 
 ## Debian and Ubuntu
 
