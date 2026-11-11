@@ -52,5 +52,9 @@ if [ -n "$key" ]; then
   exit 0
 fi
 
-# 44: the video group, the same in every Debian and Ubuntu, unlike render
-tool_add_devices 44 "/dev/dri/$GPU_DEVICE"
+# The container's video group: 27 on Alpine, 44 on Debian and Ubuntu
+gid=44
+if grep -q '^ostype: alpine' <<< "$(pct config "$CT_ID")"; then
+  gid=27
+fi
+tool_add_devices "$gid" "/dev/dri/$GPU_DEVICE"

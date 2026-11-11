@@ -30,7 +30,9 @@ pct set <CTID> -devN /dev/dri/renderD128,gid=44
 ```
 
 - The device then shows in the container's Resources.
-- Group `44` is `video`, the same in every Debian and Ubuntu (the `render` group's number changes from one system to another). The app's user must be a member of `video`, for example `usermod -aG video jellyfin` in the container.
+- In the container, the device belongs to the `video` group (44 on Debian and Ubuntu, 27 on Alpine). If the app doesn't run as root, its user must be a member of that group:
+  - Debian and Ubuntu: `usermod -aG video <user>`
+  - Alpine: `addgroup <user> video`
 - A container that gets the GPU through `lxc.*` lines (`/dev/dri` mounts, for example) is left as it is: the script shows these lines and stops. To switch to device passthrough, remove them from `/etc/pve/lxc/<CTID>.conf` on the host, then run the script again.
 - NVIDIA cards need more than the render node (their own devices and the same driver version in the container as on the host): they are not handled.
 
