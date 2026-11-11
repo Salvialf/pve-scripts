@@ -460,10 +460,15 @@ create_or_update() {
   fi
 }
 
+# Inside a container: Alpine, else the Debian family (Debian, Ubuntu)
+is_alpine() {
+  [ -f /etc/alpine-release ]
+}
+
 # Unlike dist-upgrade, never removes a package, and keeps the config files the user changed
 update_packages() {
   msg_info "Updating container packages"
-  if [ -f /etc/alpine-release ]; then
+  if is_alpine; then
     $STD apk -U upgrade
   else
     export DEBIAN_FRONTEND=noninteractive
@@ -475,7 +480,7 @@ update_packages() {
 
 # Nothing to do on Alpine: apk keeps no cache and drops unneeded dependencies itself
 clean_packages() {
-  if [ -f /etc/alpine-release ]; then
+  if is_alpine; then
     return
   fi
   msg_info "Cleaning up container packages"
@@ -485,7 +490,7 @@ clean_packages() {
 }
 
 install_packages() {
-  if [ -f /etc/alpine-release ]; then
+  if is_alpine; then
     $STD apk add "$@"
   else
     $STD apt-get install -y "$@"
@@ -494,7 +499,7 @@ install_packages() {
 
 # Starts service $1 at each boot, and restarts it now so it reads its current configuration
 enable_service() {
-  if [ -f /etc/alpine-release ]; then
+  if is_alpine; then
     $STD rc-update add "$1"
     $STD rc-service "$1" restart
   else
