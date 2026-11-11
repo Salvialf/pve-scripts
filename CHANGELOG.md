@@ -14,6 +14,7 @@
 
 ### Fixed
 
+- In new containers, the login banner shown right after a start now waits for the IP address instead of showing `none`.
 - GPU tool: in an Alpine container, the GPU now gets the right group (`video`).
 - `update` no longer waits on a hidden question when a package brings a new version of a config file changed in the container: the container's version is kept.
 - `update` no longer leaves its downloaded packages on the disk of Debian and Ubuntu containers.
