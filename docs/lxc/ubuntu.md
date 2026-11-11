@@ -20,7 +20,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/mai
 | OS | Latest Ubuntu LTS |
 | CPU | 1 vCPU |
 | RAM | 512 MiB |
-| Disk | 4 GiB |
+| Disk | 2 GiB |
 | Network | DHCP on `vmbr0` |
 | Container | Unprivileged, root autologin on the console |
 

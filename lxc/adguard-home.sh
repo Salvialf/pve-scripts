@@ -16,9 +16,7 @@ LOGO=$(cat <<"EOF"
 EOF
 )
 APP="AdGuard-Home"
-var_disk="4"
-var_cpu="1"
-var_ram="512"
+var_disk="3"
 var_os_supported="debian ubuntu"
 var_onboot="yes"
 var_color_primary="color72"

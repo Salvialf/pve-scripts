@@ -24,7 +24,7 @@ At the end, the script shows the address of AdGuard Home's setup wizard, on port
 | OS | Latest Debian |
 | CPU | 1 vCPU |
 | RAM | 512 MiB |
-| Disk | 4 GiB |
+| Disk | 3 GiB |
 | Network | DHCP on `vmbr0` |
 | Container | Unprivileged, starts at boot, root autologin on the console |
 

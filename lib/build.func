@@ -4,7 +4,7 @@
 # Author: tteck (tteckster) | Salvialf
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
-# Disk, CPU, RAM and OS come from the ct script's var_* variables
+# Disk, CPU, RAM and OS come from the ct script's var_* variables, else the distribution's defaults
 default_settings() {
   # The first supported distribution, in its latest version unless the app needs another
   var_os="${var_os_supported%% *}"
@@ -23,9 +23,7 @@ default_settings() {
   ROOT_PASSWORD=""
   CT_ID=$NEXTID
   CT_HOSTNAME=$APP_SLUG
-  DISK_SIZE="$var_disk"
-  CORE_COUNT="$var_cpu"
-  RAM_SIZE="$var_ram"
+  default_resources
   IPV4="dhcp"
   GATEWAY=""
   APT_CACHER=""
@@ -46,6 +44,23 @@ default_settings() {
   if declare -F app_default_settings >/dev/null; then
     app_default_settings
   fi
+}
+
+# The ct script's var_disk_<family>, else its var_disk, else the family's default (same for CPU and RAM)
+default_resources() {
+  local family="debian" disk="2" ram="512" name
+  if [ "$var_os" == "alpine" ]; then
+    family="alpine" disk="0.5" ram="256"
+  fi
+  name="var_disk_$family"
+  DEFAULT_DISK_SIZE="${!name:-${var_disk:-$disk}}"
+  name="var_cpu_$family"
+  DEFAULT_CORE_COUNT="${!name:-${var_cpu:-1}}"
+  name="var_ram_$family"
+  DEFAULT_RAM_SIZE="${!name:-${var_ram:-$ram}}"
+  DISK_SIZE="$DEFAULT_DISK_SIZE"
+  CORE_COUNT="$DEFAULT_CORE_COUNT"
+  RAM_SIZE="$DEFAULT_RAM_SIZE"
 }
 
 # Prints the arguments separated by commas, nothing without arguments
@@ -161,9 +176,10 @@ step_distribution() {
   fi
   os=$(wt --title "DISTRIBUTION" --notags --default-item "$var_os" --menu "Choose the distribution" "${menu[@]}") || return
   if [ "$os" != "$var_os" ]; then
+    var_os="$os"
     var_os_version=$(os_default_version "$os")
+    default_resources
   fi
-  var_os="$os"
 }
 
 # Versions of distribution $1 with a template for this host's architecture, oldest first
@@ -333,10 +349,10 @@ step_container_storage() {
 }
 
 step_disk_size() {
-  local size="${DISK_SIZE:-$var_disk}"
+  local size="$DISK_SIZE"
   while true; do
     size=$(wt --title "DISK SIZE" --inputbox "Set the disk size in GiB\n$(kib_to_gib "$CONTAINER_STORAGE_FREE") GiB free on $CONTAINER_STORAGE" "$size") || return
-    size="${size:-$var_disk}"
+    size="${size:-$DEFAULT_DISK_SIZE}"
     if ! [[ "$size" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
       wt --title "DISK SIZE" --msgbox "Invalid disk size: $size\nUse a number of GiB, e.g. 16"
       continue
@@ -349,10 +365,10 @@ step_disk_size() {
 }
 
 step_cpu() {
-  local cores="${CORE_COUNT:-$var_cpu}"
+  local cores="$CORE_COUNT"
   while true; do
     cores=$(wt --title "CPU CORES" --inputbox "Set the number of CPU cores" "$cores") || return
-    cores="${cores:-$var_cpu}"
+    cores="${cores:-$DEFAULT_CORE_COUNT}"
     is_number_in 1 8192 "$cores" && break
     wt --title "CPU CORES" --msgbox "Invalid number of CPU cores: $cores\nUse a whole number from 1 to 8192"
   done
@@ -360,10 +376,10 @@ step_cpu() {
 }
 
 step_ram() {
-  local ram="${RAM_SIZE:-$var_ram}"
+  local ram="$RAM_SIZE"
   while true; do
     ram=$(wt --title "RAM" --inputbox "Set the RAM size in MiB" "$ram") || return
-    ram="${ram:-$var_ram}"
+    ram="${ram:-$DEFAULT_RAM_SIZE}"
     [[ "$ram" =~ ^[0-9]{1,9}$ ]] && [ "$ram" -ge 16 ] && break
     wt --title "RAM" --msgbox "Invalid RAM size: $ram\nUse a whole number of MiB, 16 or more"
   done

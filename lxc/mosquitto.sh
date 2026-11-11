@@ -17,9 +17,6 @@ LOGO=$(cat <<"EOF"
 EOF
 )
 APP="Mosquitto"
-var_disk="2"
-var_cpu="1"
-var_ram="512"
 var_os_supported="debian ubuntu"
 var_onboot="yes"
 var_color_primary="color24"

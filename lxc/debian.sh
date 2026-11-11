@@ -15,9 +15,6 @@ LOGO=$(cat <<"EOF"
 EOF
 )
 APP="Debian"
-var_disk="4"
-var_cpu="1"
-var_ram="512"
 var_os_supported="debian"
 var_color_primary="color125"
 init_script
