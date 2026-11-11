@@ -25,19 +25,18 @@ var_onboot="yes"
 var_color_primary="color25"
 init_script
 
-function update_script() {
+function app_update() {
   if [[ ! -d /opt/zwave-js-ui ]]; then
     msg_error "No ${APP} installation found"
     exit 1
   fi
-  update_packages
   local release
+  msg_info "Updating $APP"
   release=$(curl -fsSL https://api.github.com/repos/zwave-js/zwave-js-ui/releases/latest | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4)
   if [ "$release" == "$(cat /opt/zwave-js-ui/version 2>/dev/null)" ]; then
     msg_ok "$APP is already up to date ($release)"
     return
   fi
-  msg_info "Updating $APP to $release"
   curl -fsSL -o /tmp/zwave-js-ui.zip "https://github.com/zwave-js/zwave-js-ui/releases/download/${release}/zwave-js-ui-${release}-linux.zip"
   systemctl stop zwave-js-ui
   rm -rf /opt/zwave-js-ui

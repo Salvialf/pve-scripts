@@ -27,14 +27,13 @@ var_color_primary="color35"
 var_color_theme="dark"
 init_script
 
-function update_script() {
+function app_pre_update() {
   if [[ ! -f /etc/caddy/Caddyfile ]]; then
     msg_error "No ${APP} installation found"
     exit 1
   fi
   # Caddy renews its repository key: a copy kept from the install would end up expired and block its updates
   curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor >/usr/share/keyrings/caddy-stable-archive-keyring.gpg
-  update_packages
 }
 
 create_or_update

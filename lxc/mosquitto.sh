@@ -76,14 +76,6 @@ function app_check() {
   fi
 }
 
-function update_script() {
-  if [[ ! -f /etc/mosquitto/conf.d/default.conf ]]; then
-    msg_error "No ${APP} installation found"
-    exit 1
-  fi
-  update_packages
-}
-
 create_or_update
 echo -e "Connect the MQTT clients to the following address:
          ${BL}$(get_ip):1883${CL}

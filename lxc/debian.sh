@@ -23,9 +23,4 @@ var_os_locked="yes"
 var_version="13"
 var_color_primary="color125"
 init_script
-
-function update_script() {
-  update_packages
-}
-
 create_or_update

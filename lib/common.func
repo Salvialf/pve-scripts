@@ -453,7 +453,14 @@ create_or_update() {
     header_info
     wt --title "UPDATE CONTAINER" --yesno "This will update the ${APP} LXC. Proceed?" || exit-script
     std_mode
-    update_script
+    # Optional in the lxc script: app_pre_update prepares apt (e.g. a repository key), app_update updates what apt doesn't
+    if declare -F app_pre_update >/dev/null; then
+      app_pre_update
+    fi
+    update_packages
+    if declare -F app_update >/dev/null; then
+      app_update
+    fi
     clean_packages
     exit
   fi

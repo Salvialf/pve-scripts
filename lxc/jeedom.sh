@@ -98,15 +98,6 @@ function jeedom_branch_exists() {
   curl -fsI "https://raw.githubusercontent.com/jeedom/core/${1}/install/install.sh" >/dev/null
 }
 
-function update_script() {
-  if [[ ! -f /var/www/html/core/config/version ]]; then
-    msg_error "No ${APP} installation found"
-    exit 1
-  fi
-  update_packages
-  echo -e "You can now update Jeedom itself from its Web UI."
-}
-
 # JEEDOM_BRANCH can be passed on the command line, catch a typo before creating anything
 if [ -n "${JEEDOM_BRANCH:-}" ] && ! jeedom_branch_exists "$JEEDOM_BRANCH"; then
   msg_error "Jeedom branch '${JEEDOM_BRANCH}' not found"
