@@ -9,7 +9,7 @@ source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
 prepare_container
 
 msg_info "Installing unzip"
-$STD apt-get install -y unzip
+install_packages unzip
 msg_ok "Installed unzip"
 
 msg_info "Installing Z-Wave JS UI"
@@ -38,7 +38,7 @@ Environment=STORE_DIR=/var/lib/zwave-js-ui
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl enable -q --now zwave-js-ui
+enable_service zwave-js-ui
 msg_ok "Created the Z-Wave JS UI service"
 
 finish_container

@@ -197,7 +197,10 @@ prepare_container() {
   catch_errors
   configure_os
   update_packages
-  install_base
+  # Used by the app installs and the update command
+  msg_info "Installing curl"
+  install_packages curl
+  msg_ok "Installed curl"
 }
 
 # Run by every install script after the app's own steps
@@ -479,4 +482,23 @@ clean_packages() {
   $STD apt-get -y autoremove
   $STD apt-get clean
   msg_ok "Cleaned up container packages"
+}
+
+install_packages() {
+  if [ -f /etc/alpine-release ]; then
+    $STD apk add "$@"
+  else
+    $STD apt-get install -y "$@"
+  fi
+}
+
+# Starts service $1 at each boot, and restarts it now so it reads its current configuration
+enable_service() {
+  if [ -f /etc/alpine-release ]; then
+    $STD rc-update add "$1"
+    $STD rc-service "$1" restart
+  else
+    systemctl enable -q "$1"
+    systemctl restart "$1"
+  fi
 }

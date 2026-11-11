@@ -9,9 +9,7 @@ source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
 prepare_container
 
 msg_info "Installing Mosquitto"
-$STD apt-get install -y \
-  mosquitto \
-  mosquitto-clients
+install_packages mosquitto mosquitto-clients
 cat <<EOF >/etc/mosquitto/conf.d/default.conf
 allow_anonymous false
 persistence true
@@ -24,7 +22,7 @@ msg_ok "Installed Mosquitto"
 msg_info "Creating MQTT user ${MOSQUITTO_USER}"
 $STD mosquitto_passwd -c -b /etc/mosquitto/passwd "$MOSQUITTO_USER" "$MOSQUITTO_PASSWORD"
 chown mosquitto:mosquitto /etc/mosquitto/passwd
-systemctl restart mosquitto
+enable_service mosquitto
 msg_ok "Created MQTT user ${MOSQUITTO_USER}"
 
 finish_container

@@ -40,13 +40,6 @@ EOF
   msg_ok "Configured container OS"
 }
 
-# Used by the app installs and the update command
-install_base() {
-  msg_info "Installing curl"
-  $STD apt-get install -y curl
-  msg_ok "Installed curl"
-}
-
 # Login banner, and root SSH access when chosen
 motd_ssh() {
   echo "export TERM='xterm-256color'" >>/root/.bashrc

@@ -18,7 +18,7 @@ msg_ok "Downloaded Jeedom installation script"
 msg_info "Installing Jeedom main dependencies, please wait"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 2
 # Temporary python3-venv manual install until https://github.com/jeedom/core/pull/3535 is on master
-$STD apt-get install -y python3-venv
+install_packages python3-venv
 msg_ok "Installed Jeedom main dependencies"
 
 msg_info "Installing MariaDB"

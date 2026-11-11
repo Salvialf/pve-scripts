@@ -23,13 +23,6 @@ configure_os() {
   msg_ok "Configured container OS"
 }
 
-# Used by the app installs and the update command
-install_base() {
-  msg_info "Installing curl"
-  $STD apk add curl
-  msg_ok "Installed curl"
-}
-
 # Login banner, and root SSH access when chosen (the template has no SSH server)
 motd_ssh() {
   echo "export TERM='xterm-256color'" >>/root/.profile

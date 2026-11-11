@@ -9,7 +9,7 @@ source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
 prepare_container
 
 msg_info "Installing gpg"
-$STD apt-get install -y gpg
+install_packages gpg
 msg_ok "Installed gpg"
 
 msg_info "Installing Caddy"
@@ -17,7 +17,7 @@ curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor 
 curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt >/etc/apt/sources.list.d/caddy-stable.list
 chmod o+r /usr/share/keyrings/caddy-stable-archive-keyring.gpg /etc/apt/sources.list.d/caddy-stable.list
 $STD apt-get update
-$STD apt-get install -y caddy
+install_packages caddy
 msg_ok "Installed Caddy"
 
 finish_container
