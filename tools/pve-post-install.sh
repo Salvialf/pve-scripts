@@ -16,6 +16,8 @@ EOF
 )
 TOOL_NAME="Post install"
 init_tool
+# Its update runs long, a dropped SSH session would cut it
+ssh_check
 
 if ! pveversion | grep -q "pve-manager/9\."; then
   msg_error "This tool requires Proxmox VE 9, upgrade first"
