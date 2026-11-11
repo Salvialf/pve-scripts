@@ -31,13 +31,15 @@ function app_update() {
     msg_error "No ${APP} installation found"
     exit 1
   fi
-  local output
+  local installed release
   msg_info "Updating $APP"
-  output=$(/opt/AdGuardHome/AdGuardHome --update 2>&1)
-  if grep -q "no updates available" <<< "$output"; then
-    msg_ok "$APP is already up to date"
+  installed=$(/opt/AdGuardHome/AdGuardHome --version | awk '{print $NF}')
+  $STD /opt/AdGuardHome/AdGuardHome --update
+  release=$(/opt/AdGuardHome/AdGuardHome --version | awk '{print $NF}')
+  if [ "$release" == "$installed" ]; then
+    msg_ok "$APP is already up to date ($release)"
   else
-    msg_ok "Updated $APP"
+    msg_ok "Updated $APP to $release"
   fi
 }
 
