@@ -17,7 +17,7 @@ LOGO=$(cat <<"EOF"
 EOF
 )
 APP="Mosquitto"
-var_os_supported="debian ubuntu"
+var_os_supported="debian ubuntu alpine"
 var_onboot="yes"
 var_color_primary="color24"
 app_settings=(step_mosquitto_user step_mosquitto_password)

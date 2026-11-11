@@ -6,6 +6,10 @@
 
 ## 2026-11-11
 
+### Added
+
+- Mosquitto can now run on Alpine for a lighter container: choose it in the General settings.
+
 ### Changed
 
 - `update` now also upgrades the packages that need a new dependency, instead of leaving them at their old version. It still never removes a package in use, only the dependencies nothing needs anymore.

@@ -1,6 +1,6 @@
 # Mosquitto LXC
 
-[Mosquitto](https://mosquitto.org/) is an MQTT broker: home automation software and devices (Jeedom, Home Assistant, Zigbee2MQTT, Z-Wave JS UI, ESPHome...) exchange their messages through it. This script installs Debian's `mosquitto` package.
+[Mosquitto](https://mosquitto.org/) is an MQTT broker: home automation software and devices (Jeedom, Home Assistant, Zigbee2MQTT, Z-Wave JS UI, ESPHome...) exchange their messages through it. This script installs the distribution's `mosquitto` package.
 
 > [!IMPORTANT]
 > - Run the commands on this page in the Shell of the Proxmox VE host (node > Shell).
@@ -17,18 +17,18 @@ Set the MQTT user and password in the Mosquitto category of the settings menu: t
 
 ## Default settings
 
-| Setting | Value |
-|---|---|
-| OS | Latest Debian |
-| CPU | 1 vCPU |
-| RAM | 512 MiB |
-| Disk | 2 GiB |
-| Network | DHCP on `vmbr0` |
-| Container | Unprivileged, starts at boot, root autologin on the console |
-| MQTT user and password | Required (no default) |
+| Setting | Debian | Alpine |
+|---|---|---|
+| OS | Latest Debian | Latest Alpine |
+| CPU | 1 vCPU | Same as Debian |
+| RAM | 512 MiB | 256 MiB |
+| Disk | 2 GiB | 0.5 GiB |
+| Network | DHCP on `vmbr0` | Same as Debian |
+| Container | Unprivileged, starts at boot, root autologin on the console | Same as Debian |
+| MQTT user and password | Required (no default) | Same as Debian |
 
 > [!NOTE]
-> Other Debian versions and Ubuntu are available in the General settings.
+> Other Debian versions, Ubuntu and Alpine are available in the General settings.
 
 ## Configuration
 
@@ -42,10 +42,14 @@ From the container's console, add a user or change a password (asked twice):
 
 ```bash
 mosquitto_passwd /etc/mosquitto/passwd <user>
-systemctl reload mosquitto
 ```
 
-Remove a user with `mosquitto_passwd -D /etc/mosquitto/passwd <user>`, then reload the same way. The reload applies the change without disconnecting the clients.
+Then reload the broker, which applies the change without disconnecting the clients:
+
+- Debian and Ubuntu: `systemctl reload mosquitto`
+- Alpine: `kill -HUP $(cat /run/mosquitto.pid)`
+
+Remove a user with `mosquitto_passwd -D /etc/mosquitto/passwd <user>`, then reload the same way.
 
 `mosquitto_passwd` warns that the file's owner is not root: the file belongs to the `mosquitto` user on purpose, so that only the broker can read it.
 

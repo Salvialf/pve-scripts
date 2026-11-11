@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Copyright (c) 2021-2024 tteck
-# Author: tteck (tteckster)
-# Modified by: Salvialf
+# Copyright (c) 2026 Salvialf
+# Author: tteck (tteckster) | Salvialf
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 # Source: https://mosquitto.org/
 
@@ -10,6 +10,12 @@ prepare_container
 
 msg_info "Installing Mosquitto"
 install_packages mosquitto mosquitto-clients
+# Debian's mosquitto.conf already has these two settings, Alpine's doesn't
+if is_alpine; then
+  mkdir -p /etc/mosquitto/conf.d /var/lib/mosquitto
+  chown mosquitto:mosquitto /var/lib/mosquitto
+  printf '\npersistence_location /var/lib/mosquitto/\ninclude_dir /etc/mosquitto/conf.d\n' >>/etc/mosquitto/mosquitto.conf
+fi
 cat <<EOF >/etc/mosquitto/conf.d/default.conf
 allow_anonymous false
 persistence true
