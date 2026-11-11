@@ -114,11 +114,11 @@ host_lists() {
   TEMPLATE_STORAGE_LIST=$(pvesm status -content vztmpl | awk 'NR>1') || true
   CONTAINER_STORAGE_LIST=$(pvesm status -content rootdir | awk 'NR>1') || true
   if [ -z "$TEMPLATE_STORAGE_LIST" ]; then
-    msg_error "Unable to detect a valid Template Storage location."
+    msg_error "Unable to detect a valid template storage location"
     exit 1
   fi
   if [ -z "$CONTAINER_STORAGE_LIST" ]; then
-    msg_error "Unable to detect a valid Container Storage location."
+    msg_error "Unable to detect a valid container storage location"
     exit 1
   fi
   BRIDGE_NAMES=()
@@ -130,7 +130,7 @@ host_lists() {
     BRIDGE_TYPES+=("$(sed -n 's/.*"type":"\([^"]*\)".*/\1/p' <<< "$entry")")
   done < <(pvesh get "/nodes/$(hostname -s)/network" --type any_bridge --output-format json | grep -o '{[^}]*}' || true)
   if [ ${#BRIDGE_NAMES[@]} -eq 0 ]; then
-    msg_error "Unable to detect a network bridge on this host."
+    msg_error "Unable to detect a network bridge on this host"
     exit 1
   fi
 }
@@ -820,9 +820,9 @@ create_container() {
     options+=(-password "$ROOT_PASSWORD")
   fi
 
-  msg_info "Updating LXC Template List"
+  msg_info "Updating LXC template list"
   pveam update >/dev/null
-  msg_ok "Updated LXC Template List"
+  msg_ok "Updated LXC template list"
 
   template_search="${var_os}-${var_version}"
   # Keep only the host's architecture (PVE 9 also lists arm64 templates)
@@ -835,26 +835,26 @@ create_container() {
       sort -t - -k 2 -V || true
   )
   if [ ${#templates[@]} -eq 0 ]; then
-    msg_error "Unable to find a template when searching for '$template_search'."
+    msg_error "Unable to find a template when searching for '$template_search'"
     exit 1
   fi
   template="${templates[-1]}"
 
   if ! pveam list "$TEMPLATE_STORAGE" | grep -q "$template"; then
-    msg_info "Downloading LXC Template"
+    msg_info "Downloading LXC template"
     if ! pveam download "$TEMPLATE_STORAGE" "$template" >/dev/null; then
-      msg_error "A problem occurred while downloading the LXC template."
+      msg_error "A problem occurred while downloading the LXC template"
       exit 1
     fi
-    msg_ok "Downloaded LXC Template"
+    msg_ok "Downloaded LXC template"
   fi
 
-  msg_info "Creating LXC Container"
+  msg_info "Creating LXC container"
   if ! pct create "$CT_ID" "${TEMPLATE_STORAGE}:vztmpl/${template}" "${options[@]}" -rootfs "$CONTAINER_STORAGE:$DISK_SIZE" >/dev/null; then
-    msg_error "A problem occurred while trying to create the container."
+    msg_error "A problem occurred while trying to create the container"
     exit 1
   fi
-  msg_ok "LXC Container ${BL}$CT_ID${CL} ${GN}was successfully created."
+  msg_ok "LXC container ${BL}$CT_ID${CL} ${GN}was successfully created"
 }
 
 # Runs tools/$1 on the container being created, before its first start. The other arguments are the tool's variables
@@ -900,9 +900,9 @@ add_devices() {
 
 start_container() {
   local rootfs="/var/lib/lxc/$CT_ID/rootfs"
-  msg_info "Starting LXC Container"
+  msg_info "Starting LXC container"
   pct start "$CT_ID"
-  msg_ok "Started LXC Container"
+  msg_ok "Started LXC container"
   # Fix Debian 13 LXC template bug where / is owned by nobody:nogroup
   # (must be done from the host, an unprivileged container cannot chown /)
   if [ -d "$rootfs" ] && [ "$(stat -c '%U' "$rootfs")" != "root" ]; then
@@ -912,7 +912,7 @@ start_container() {
 
 wait_for_network() {
   local i ip=""
-  msg_info "Waiting for the network"
+  msg_info "Waiting for the container network"
   for ((i = 30; i > 0; i--)); do
     ip=$(get_ip 2>/dev/null) || true
     if [ -n "$ip" ]; then
@@ -924,13 +924,13 @@ wait_for_network() {
     msg_error "No IPv4 address after 30 seconds, check the network settings"
     exit 1
   fi
-  msg_ok "Network Connected: ${BL}$ip"
+  msg_ok "Container network connected: ${BL}$ip"
 }
 
 # Internet over IPv4, required by the install, IPv6 only reported, then DNS
 network_check() {
   local prompt resolved_ip
-  msg_info "Checking Internet access"
+  msg_info "Checking the container's Internet access"
   if ct_exec ping -c 1 -W 1 1.1.1.1 &>/dev/null; then
     msg_ok "IPv4 Internet connected"
   else

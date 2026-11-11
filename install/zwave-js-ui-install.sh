@@ -8,9 +8,9 @@
 source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
 prepare_container
 
-msg_info "Installing Dependencies"
+msg_info "Installing unzip"
 $STD apt-get install -y unzip
-msg_ok "Installed Dependencies"
+msg_ok "Installed unzip"
 
 msg_info "Installing Z-Wave JS UI"
 RELEASE=$(curl -fsSL https://api.github.com/repos/zwave-js/zwave-js-ui/releases/latest | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4)
@@ -20,7 +20,7 @@ rm /tmp/zwave-js-ui.zip
 echo "$RELEASE" >/opt/zwave-js-ui/version
 msg_ok "Installed Z-Wave JS UI $RELEASE"
 
-msg_info "Creating Service"
+msg_info "Creating the Z-Wave JS UI service"
 cat <<EOF >/etc/systemd/system/zwave-js-ui.service
 [Unit]
 Description=Z-Wave JS UI
@@ -39,6 +39,6 @@ Environment=STORE_DIR=/var/lib/zwave-js-ui
 WantedBy=multi-user.target
 EOF
 systemctl enable -q --now zwave-js-ui
-msg_ok "Created Service"
+msg_ok "Created the Z-Wave JS UI service"
 
 finish_container

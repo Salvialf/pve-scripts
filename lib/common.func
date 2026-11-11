@@ -298,7 +298,7 @@ shell_check() {
 root_check() {
   if [[ "$(id -u)" -ne 0 || $(ps -o comm= -p $PPID) == "sudo" ]]; then
     clear
-    msg_error "Please run this script as root."
+    msg_error "Please run this script as root"
     echo -e "\nExiting..."
     sleep 2
     exit 1
@@ -448,7 +448,7 @@ create_or_update() {
     choose_settings
     build_container
     description
-    msg_ok "Completed Successfully!\n"
+    msg_ok "Completed successfully!\n"
   else
     header_info
     wt --title "UPDATE CONTAINER" --yesno "This will update the ${APP} LXC. Proceed?" || exit-script
@@ -468,7 +468,7 @@ create_or_update() {
 
 # Unlike dist-upgrade, never removes a package, and keeps the config files the user changed
 update_packages() {
-  msg_info "Updating Container OS"
+  msg_info "Updating container packages"
   if [ -f /etc/alpine-release ]; then
     $STD apk -U upgrade
   else
@@ -476,7 +476,7 @@ update_packages() {
     $STD apt-get update
     $STD apt-get -y --with-new-pkgs -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
   fi
-  msg_ok "Updated Container OS"
+  msg_ok "Updated container packages"
 }
 
 # Nothing to do on Alpine: apk keeps no cache and drops unneeded dependencies itself
@@ -484,8 +484,8 @@ clean_packages() {
   if [ -f /etc/alpine-release ]; then
     return
   fi
-  msg_info "Cleaning up"
+  msg_info "Cleaning up container packages"
   $STD apt-get -y autoremove
   $STD apt-get -y clean
-  msg_ok "Cleaned"
+  msg_ok "Cleaned up container packages"
 }

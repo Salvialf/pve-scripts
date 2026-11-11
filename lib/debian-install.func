@@ -15,7 +15,7 @@ verb_ip6() {
 
 # Locale, timezone and APT-Cacher
 configure_os() {
-  msg_info "Configuring Container OS"
+  msg_info "Configuring container OS"
   sed -i "/$LANG/ s/\(^# \)//" /etc/locale.gen
   locale_line=$(grep -v '^#' /etc/locale.gen | grep -E '^[a-zA-Z]' | awk '{print $1}' | head -n 1)
   echo "LANG=${locale_line}" >/etc/default/locale
@@ -37,14 +37,14 @@ fi
 EOF
     chmod +x /usr/local/bin/apt-proxy-detect.sh
   fi
-  msg_ok "Configured Container OS"
+  msg_ok "Configured container OS"
 }
 
 # Used by the app installs and the update command
 install_base() {
-  msg_info "Installing base packages"
+  msg_info "Installing curl"
   $STD apt-get install -y curl
-  msg_ok "Installed base packages"
+  msg_ok "Installed curl"
 }
 
 # Login banner, and root SSH access when chosen
@@ -63,7 +63,7 @@ motd_ssh() {
 # Console autologin when there is no root password, and the in-container update command
 customize() {
   if [[ "$ROOT_PASSWORD" == "" ]]; then
-    msg_info "Customizing Container"
+    msg_info "Enabling console autologin"
     GETTY_OVERRIDE="/etc/systemd/system/container-getty@1.service.d/override.conf"
     mkdir -p $(dirname $GETTY_OVERRIDE)
     cat <<EOF >$GETTY_OVERRIDE
@@ -73,7 +73,7 @@ customize() {
 EOF
     systemctl daemon-reload
     systemctl restart $(basename $(dirname $GETTY_OVERRIDE) | sed 's/\.d//')
-    msg_ok "Customized Container"
+    msg_ok "Enabled console autologin"
   fi
   echo "bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/${APP_SLUG}.sh)\"" >/usr/bin/update
   chmod +x /usr/bin/update

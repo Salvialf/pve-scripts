@@ -8,14 +8,12 @@
 source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
 prepare_container
 
-# JEEDOM_BRANCH is exported by lxc/jeedom.sh
-msg_ok "Installing Jeedom from branch: ${JEEDOM_BRANCH}"
-
 msg_info "Downloading Jeedom installation script"
 cd /tmp
+# JEEDOM_BRANCH is exported by lxc/jeedom.sh
 curl -fsSL -o install.sh https://raw.githubusercontent.com/jeedom/core/"${JEEDOM_BRANCH}"/install/install.sh
 chmod +x install.sh
-msg_ok "Installation script downloaded"
+msg_ok "Downloaded Jeedom installation script"
 
 msg_info "Installing Jeedom main dependencies, please wait"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 2
@@ -23,29 +21,29 @@ $STD ./install.sh -v "$JEEDOM_BRANCH" -s 2
 $STD apt-get install -y python3-venv
 msg_ok "Installed Jeedom main dependencies"
 
-msg_info "Installing database"
+msg_info "Installing MariaDB"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 3
-msg_ok "Installed database"
+msg_ok "Installed MariaDB"
 
 msg_info "Installing Apache"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 4
 msg_ok "Installed Apache"
 
-msg_info "Installing PHP and dependencies"
+msg_info "Installing PHP and its extensions"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 5
-msg_ok "Installed PHP"
+msg_ok "Installed PHP and its extensions"
 
 msg_info "Downloading Jeedom core"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 6
 msg_ok "Downloaded Jeedom core"
 
-msg_info "Customizing database"
+msg_info "Configuring MariaDB"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 7
-msg_ok "Customized database"
+msg_ok "Configured MariaDB"
 
-msg_info "Customizing Jeedom"
+msg_info "Configuring Apache and PHP"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 8
-msg_ok "Customized Jeedom"
+msg_ok "Configured Apache and PHP"
 
 msg_info "Configuring Jeedom"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 9
@@ -55,14 +53,14 @@ msg_info "Installing Jeedom"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 10
 msg_ok "Installed Jeedom"
 
-msg_info "Running post-installation steps"
+msg_info "Finishing the Jeedom installation"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 11
-msg_ok "Post-installation done"
+msg_ok "Finished the Jeedom installation"
 
-msg_info "Checking installation"
+msg_info "Checking the Jeedom installation"
 $STD ./install.sh -v "$JEEDOM_BRANCH" -s 12
 # Temporary reboot hint until https://github.com/jeedom/core/pull/3544 is on master
-msg_ok "Installation checked, a reboot is recommended"
+msg_ok "Checked the Jeedom installation, a reboot is recommended"
 
 rm -f /tmp/install.sh
 

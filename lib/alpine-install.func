@@ -16,18 +16,18 @@ verb_ip6() {
 
 # Timezone, tzdata is missing from the Alpine template
 configure_os() {
-  msg_info "Configuring Container OS"
+  msg_info "Configuring container OS"
   $STD apk add tzdata
   echo "$TIMEZONE" >/etc/timezone
   ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
-  msg_ok "Configured Container OS"
+  msg_ok "Configured container OS"
 }
 
 # Used by the app installs and the update command
 install_base() {
-  msg_info "Installing base packages"
+  msg_info "Installing curl"
   $STD apk add curl
-  msg_ok "Installed base packages"
+  msg_ok "Installed curl"
 }
 
 # Login banner, and root SSH access when chosen (the template has no SSH server)
@@ -46,7 +46,7 @@ motd_ssh() {
 # Console autologin when there is no root password, root stays locked; and the in-container update command
 customize() {
   if [[ "$ROOT_PASSWORD" == "" ]]; then
-    msg_info "Customizing Container"
+    msg_info "Enabling console autologin"
     printf '#!/bin/sh\nexec /bin/login -f root\n' >/usr/local/bin/autologin
     chmod +x /usr/local/bin/autologin
     sed -i 's|^tty1:.*|tty1::respawn:/sbin/getty -n -l /usr/local/bin/autologin 38400 tty1|' /etc/inittab
@@ -55,7 +55,7 @@ customize() {
     # init reloads inittab, the old tty1 getty is stopped so the new one takes its place
     kill -HUP 1
     pkill -f '^/sbin/getty 38400 tty1$' || true
-    msg_ok "Customized Container"
+    msg_ok "Enabled console autologin"
   fi
   # whiptail, and tput for its colors, used by the update command
   $STD apk add newt ncurses

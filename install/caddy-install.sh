@@ -8,9 +8,9 @@
 source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
 prepare_container
 
-msg_info "Installing Dependencies"
+msg_info "Installing gpg"
 $STD apt-get install -y gpg
-msg_ok "Installed Dependencies"
+msg_ok "Installed gpg"
 
 msg_info "Installing Caddy"
 curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor >/usr/share/keyrings/caddy-stable-archive-keyring.gpg
