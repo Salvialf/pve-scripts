@@ -449,6 +449,9 @@ create_or_update() {
     if declare -F app_update >/dev/null; then
       app_update
     fi
+    if [ -f /etc/profile.d/pve-scripts-motd.sh ]; then
+      login_banner
+    fi
     clean_packages
     exit
   fi

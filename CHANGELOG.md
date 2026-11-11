@@ -10,11 +10,12 @@
 
 - `update` now also upgrades the packages that need a new dependency, instead of leaving them at their old version. It still never removes a package in use, only the dependencies nothing needs anymore.
 - The AdGuard Home update now shows the version it ends on, like Z-Wave JS UI.
+- `update` now also brings the login banner up to date.
 - The scripts no longer refuse to run when the host's default shell isn't Bash: they always run in Bash anyway.
 
 ### Fixed
 
-- In new containers, the login banner shown right after a start now waits for the IP address instead of showing `none`.
+- The login banner shown right after a start now waits for the IP address instead of showing `none`.
 - GPU tool: in an Alpine container, the GPU now gets the right group (`video`).
 - `update` no longer waits on a hidden question when a package brings a new version of a config file changed in the container: the container's version is kept.
 - `update` no longer leaves its downloaded packages on the disk of Debian and Ubuntu containers.
