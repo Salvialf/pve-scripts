@@ -13,7 +13,7 @@ verb_ip6() {
   fi
 }
 
-# Locale and timezone
+# Locale, timezone and APT-Cacher
 configure_os() {
   msg_info "Configuring Container OS"
   sed -i "/$LANG/ s/\(^# \)//" /etc/locale.gen
@@ -24,12 +24,7 @@ configure_os() {
   echo $TIMEZONE >/etc/timezone
   ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
   systemctl disable -q --now systemd-networkd-wait-online.service
-  msg_ok "Configured Container OS"
-}
-
-# apt goes through the APT-Cacher while it answers, directly otherwise
-update_os() {
-  msg_info "Updating Container OS"
+  # apt goes through the APT-Cacher while it answers, directly otherwise
   if [ -n "$APT_CACHER" ]; then
     echo "Acquire::http::Proxy-Auto-Detect \"/usr/local/bin/apt-proxy-detect.sh\";" >/etc/apt/apt.conf.d/00aptproxy
     cat <<EOF >/usr/local/bin/apt-proxy-detect.sh
@@ -40,20 +35,16 @@ else
   echo -n "DIRECT"
 fi
 EOF
-  chmod +x /usr/local/bin/apt-proxy-detect.sh
+    chmod +x /usr/local/bin/apt-proxy-detect.sh
   fi
-  $STD apt-get update
-  $STD apt-get -o Dpkg::Options::="--force-confold" -y dist-upgrade
-  # Used by the app installs and the update command
-  $STD apt-get install -y curl
-  msg_ok "Updated Container OS"
+  msg_ok "Configured Container OS"
 }
 
-clean_os() {
-  msg_info "Cleaning up"
-  $STD apt-get -y autoremove
-  $STD apt-get -y clean
-  msg_ok "Cleaned"
+# Used by the app installs and the update command
+install_base() {
+  msg_info "Installing base packages"
+  $STD apt-get install -y curl
+  msg_ok "Installed base packages"
 }
 
 # Login banner, and root SSH access when chosen

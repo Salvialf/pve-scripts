@@ -23,17 +23,11 @@ configure_os() {
   msg_ok "Configured Container OS"
 }
 
-update_os() {
-  msg_info "Updating Container OS"
-  $STD apk update
-  $STD apk upgrade
-  # Used by the app installs and the update command
+# Used by the app installs and the update command
+install_base() {
+  msg_info "Installing base packages"
   $STD apk add curl
-  msg_ok "Updated Container OS"
-}
-
-clean_os() {
-  :
+  msg_ok "Installed base packages"
 }
 
 # Login banner, and root SSH access when chosen (the template has no SSH server)

@@ -196,14 +196,15 @@ prepare_container() {
   verb_ip6
   catch_errors
   configure_os
-  update_os
+  update_packages
+  install_base
 }
 
 # Run by every install script after the app's own steps
 finish_container() {
   motd_ssh
   customize
-  clean_os
+  clean_packages
 }
 
 # Login banner read at each login, so the IP, disk and OS stay current; sh and BusyBox compatible, for Alpine
@@ -453,20 +454,31 @@ create_or_update() {
     wt --title "UPDATE CONTAINER" --yesno "This will update the ${APP} LXC. Proceed?" || exit-script
     std_mode
     update_script
+    clean_packages
     exit
   fi
 }
 
-# Run by update_script: unlike dist-upgrade, never removes a package, and keeps the config files the user changed
+# Unlike dist-upgrade, never removes a package, and keeps the config files the user changed
 update_packages() {
-  msg_info "Updating OS packages"
+  msg_info "Updating Container OS"
   if [ -f /etc/alpine-release ]; then
     $STD apk -U upgrade
   else
     export DEBIAN_FRONTEND=noninteractive
     $STD apt-get update
     $STD apt-get -y --with-new-pkgs -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
-    $STD apt-get clean
   fi
-  msg_ok "Updated OS packages"
+  msg_ok "Updated Container OS"
+}
+
+# Nothing to do on Alpine: apk keeps no cache and drops unneeded dependencies itself
+clean_packages() {
+  if [ -f /etc/alpine-release ]; then
+    return
+  fi
+  msg_info "Cleaning up"
+  $STD apt-get -y autoremove
+  $STD apt-get -y clean
+  msg_ok "Cleaned"
 }
