@@ -17,15 +17,15 @@ Set the MQTT user and password in the Mosquitto category of the settings menu: t
 
 ## Default settings
 
-| Setting | Debian | Alpine |
-|---|---|---|
-| OS | Latest Debian | Latest Alpine |
-| CPU | 1 vCPU | Same as Debian |
-| RAM | 512 MiB | 256 MiB |
-| Disk | 2 GiB | 0.5 GiB |
-| Network | DHCP on `vmbr0` | Same as Debian |
-| Container | Unprivileged, starts at boot, root autologin on the console | Same as Debian |
-| MQTT user and password | Required (no default) | Same as Debian |
+| Setting | Value |
+|---|---|
+| OS | Latest Debian |
+| CPU | 1 vCPU |
+| RAM | 512 MiB (256 MiB on Alpine) |
+| Disk | 2 GiB (0.5 GiB on Alpine) |
+| Network | DHCP on `vmbr0` |
+| Container | Unprivileged, starts at boot, root autologin on the console |
+| MQTT user and password | Required (no default) |
 
 > [!NOTE]
 > Other Debian versions, Ubuntu and Alpine are available in the General settings.
