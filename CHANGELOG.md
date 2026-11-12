@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-12
+
+### Added
+
+- AdGuard Home can now run on Alpine for a lighter container: choose it in the General settings.
+
 ## 2026-11-11
 
 ### Added

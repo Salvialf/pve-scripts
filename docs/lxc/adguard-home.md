@@ -23,13 +23,13 @@ At the end, the script shows the address of AdGuard Home's setup wizard, on port
 |---|---|
 | OS | Latest Debian |
 | CPU | 1 vCPU |
-| RAM | 512 MiB |
-| Disk | 3 GiB |
+| RAM | 512 MiB (256 MiB on Alpine) |
+| Disk | 3 GiB (2 GiB on Alpine) |
 | Network | DHCP on `vmbr0` |
 | Container | Unprivileged, starts at boot, root autologin on the console |
 
 > [!NOTE]
-> Other Debian versions and Ubuntu are available in the General settings.
+> Other Debian versions, Ubuntu and Alpine are available in the General settings.
 
 ## Backup
 
