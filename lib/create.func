@@ -239,7 +239,7 @@ step_ct_id() {
 step_hostname() {
   local name="${CT_HOSTNAME:-$APP_SLUG}"
   while true; do
-    name=$(wt --title "HOSTNAME" --inputbox "Set the hostname" "$name") || return
+    name=$(wt --title "HOSTNAME" --inputbox "Set the hostname\nAlso the container's name in Proxmox" "$name") || return
     # Lowercase, spaces and underscores become hyphens, leading and trailing spaces are dropped
     name=$(awk '{$1 = $1; gsub(/[ _]/, "-"); print tolower($0)}' <<< "$name")
     name="${name:-$APP_SLUG}"
