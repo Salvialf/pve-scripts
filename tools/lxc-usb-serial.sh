@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-COMMON_FUNC=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/common.func) || { echo "Unable to download common.func"; exit 1; }
-source /dev/stdin <<< "$COMMON_FUNC"
 # Copyright (c) 2026 Salvialf
 # Author: Salvialf
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
+
+COMMON_FUNC=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/common.func) || { echo "Unable to download common.func"; exit 1; }
+source /dev/stdin <<< "$COMMON_FUNC"
 
 LOGO=$(cat <<"EOF"
    __  _______ ____     _____           _       __
