@@ -13,7 +13,7 @@ Gives an existing container the host's GPU for hardware acceleration (also calle
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/tools/lxc-gpu.sh)"
 ```
 
-Choose the container. With several GPUs on the host, the script then asks which one to give. If the container is running, the script offers to restart it: the change only applies after a restart.
+Choose the container. With several GPUs on the host, the script then asks which one to give. Proxmox VE 9 adds the device to a running container right away. On Proxmox VE 8 it only applies after a restart, which the script offers.
 
 To skip the questions, give the container ID and the render node, as listed by `ls /dev/dri/`:
 

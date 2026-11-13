@@ -15,7 +15,7 @@ Only serial devices (`ttyUSB*`, `ttyACM*`) are concerned: a USB storage key is s
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/tools/lxc-usb-serial.sh)"
 ```
 
-Choose the container, then select the devices with Space. If the container is running, the script offers to restart it: the change only applies after a restart.
+Choose the container, then select the devices with Space. Proxmox VE 9 adds the devices to a running container right away. On Proxmox VE 8 they only apply after a restart, which the script offers.
 
 To skip the lists, give the container ID and the device names, as listed by `ls /dev/serial/by-id/` (several names separated by spaces):
 

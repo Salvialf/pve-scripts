@@ -77,9 +77,9 @@ tool_add_devices() {
   fi
 }
 
-# Passthrough devices are only added when the container starts
+# Asks only when pct pending still lists a device change: Proxmox VE 9 applies an added device at once, 8 waits for the restart
 tool_offer_restart() {
-  if grep -q running <<< "$(pct status "$CT_ID")"; then
+  if grep -q running <<< "$(pct status "$CT_ID")" && grep -qE '^(new|del) dev[0-9]+:' <<< "$(pct pending "$CT_ID")"; then
     if wt --title "${TOOL_NAME^^}" --yesno "The change only applies after a restart.\nContainer $CT_ID is running, restart it now?"; then
       msg_info "Restarting container $CT_ID"
       pct reboot "$CT_ID"

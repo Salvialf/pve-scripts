@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-13
+
+### Changed
+
+- On Proxmox VE 9 the device tools no longer ask to restart a running container after adding a device: it is available right away. A removal still needs a restart, which they offer.
+
 ## 2026-11-12
 
 ### Added

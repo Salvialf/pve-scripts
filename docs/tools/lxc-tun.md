@@ -16,7 +16,7 @@ Gives an existing container the host's TUN device (`/dev/net/tun`), needed by so
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/tools/lxc-tun.sh)"
 ```
 
-Choose the container in the list. If it is running, the script offers to restart it: the change only applies after a restart.
+Choose the container in the list. Proxmox VE 9 adds the device to a running container right away. On Proxmox VE 8 it only applies after a restart, which the script offers.
 
 To skip the list, give the container ID:
 
