@@ -1,0 +1,219 @@
+#!/usr/bin/env bash
+# Copyright (c) 2021-2024 tteck
+# Copyright (c) 2026 Salvialf
+# Author: tteck (tteckster) | Salvialf
+# License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
+
+# Alpine, else the Debian family (Debian, Ubuntu)
+is_alpine() {
+  [ -f /etc/alpine-release ]
+}
+
+# Run by every install script before the app's own steps
+prepare_container() {
+  color
+  verb_ip6
+  catch_errors
+  configure_os
+  update_packages
+  # Used by the app installs and the update command
+  msg_info "Installing curl"
+  install_packages curl
+  msg_ok "Installed curl"
+}
+
+# Verbose mode and the IPv6 setting
+verb_ip6() {
+  std_mode
+  if [ "$DISABLE_IPV6" == "yes" ]; then
+    printf "net.ipv6.conf.all.disable_ipv6 = 1\nnet.ipv6.conf.default.disable_ipv6 = 1\n" >/etc/sysctl.d/99-disable-ipv6.conf
+    $STD sysctl -e -p /etc/sysctl.d/99-disable-ipv6.conf
+    # OpenRC applies sysctl.d again at each boot only through its sysctl service
+    if is_alpine; then
+      $STD rc-update add sysctl boot
+    fi
+  fi
+}
+
+# Timezone, plus the locale and APT-Cacher on Debian and Ubuntu
+configure_os() {
+  msg_info "Configuring container OS"
+  if is_alpine; then
+    # Missing from the Alpine template
+    $STD apk add tzdata
+  else
+    sed -i "/$LANG/ s/\(^# \)//" /etc/locale.gen
+    locale_line=$(grep -v '^#' /etc/locale.gen | grep -E '^[a-zA-Z]' | awk '{print $1}' | head -n 1)
+    echo "LANG=${locale_line}" >/etc/default/locale
+    locale-gen >/dev/null
+    export LANG=${locale_line}
+    systemctl disable -q --now systemd-networkd-wait-online.service
+    # apt goes through the APT-Cacher while it answers, directly otherwise
+    if [ -n "$APT_CACHER" ]; then
+      echo "Acquire::http::Proxy-Auto-Detect \"/usr/local/bin/apt-proxy-detect.sh\";" >/etc/apt/apt.conf.d/00aptproxy
+      cat <<EOF >/usr/local/bin/apt-proxy-detect.sh
+#!/bin/bash
+if nc -w1 -z "${APT_CACHER}" 3142; then
+  echo -n "http://${APT_CACHER}:3142"
+else
+  echo -n "DIRECT"
+fi
+EOF
+      chmod +x /usr/local/bin/apt-proxy-detect.sh
+    fi
+  fi
+  echo "$TIMEZONE" >/etc/timezone
+  ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
+  msg_ok "Configured container OS"
+}
+
+# Unlike dist-upgrade, never removes a package, and keeps the config files the user changed
+update_packages() {
+  msg_info "Updating container packages"
+  if is_alpine; then
+    $STD apk -U upgrade
+  else
+    export DEBIAN_FRONTEND=noninteractive
+    $STD apt-get update
+    $STD apt-get -y --with-new-pkgs -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
+  fi
+  msg_ok "Updated container packages"
+}
+
+install_packages() {
+  if is_alpine; then
+    $STD apk add "$@"
+  else
+    $STD apt-get install -y "$@"
+  fi
+}
+
+# Starts service $1 at each boot, and restarts it now so it reads its current configuration
+enable_service() {
+  if is_alpine; then
+    $STD rc-update add "$1"
+    $STD rc-service "$1" restart
+  else
+    systemctl enable -q "$1"
+    systemctl restart "$1"
+  fi
+}
+
+# Run by every install script after the app's own steps
+finish_container() {
+  motd_ssh
+  customize
+  clean_packages
+}
+
+# Login banner, and root SSH access when chosen
+motd_ssh() {
+  # Alpine's login shell (ash) doesn't read .bashrc
+  if is_alpine; then
+    echo "export TERM='xterm-256color'" >>/root/.profile
+  else
+    echo "export TERM='xterm-256color'" >>/root/.bashrc
+    chmod -x /etc/update-motd.d/*
+  fi
+  login_banner
+  # Emptied, not removed: base-files would write Debian's legal notice back
+  : >/etc/motd
+  if [[ "${ROOT_SSH}" == "yes" ]]; then
+    if is_alpine; then
+      # The Alpine template has no SSH server
+      $STD apk add openssh
+    fi
+    sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/g" /etc/ssh/sshd_config
+    if is_alpine; then
+      $STD rc-update add sshd
+      $STD rc-service sshd start
+    else
+      systemctl restart sshd
+    fi
+  fi
+}
+
+# Login banner read at each login, so the IP, disk and OS stay current; sh and BusyBox compatible, for Alpine
+login_banner() {
+  cat <<EOF >/etc/profile.d/pve-scripts-motd.sh
+# Login banner written by pve-scripts
+case \$- in
+  *i*) ;;
+  *) return ;;
+esac
+(
+  APP="$APP"
+EOF
+  cat <<'EOF' >>/etc/profile.d/pve-scripts-motd.sh
+  line() {
+    printf '  \033[33m%-9s\033[m %s\n' "$1" "$2"
+  }
+  ip4() {
+    ip -4 route get 1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p'
+  }
+  # Console only: over SSH this would wipe the user's own terminal history
+  case $(tty) in
+    /dev/tty[0-9]* | /dev/console) printf '\033[3J\033[H\033[2J' ;;
+  esac
+  printf '\n\033[1;33m%s LXC\033[m, by pve-scripts\n' "$APP"
+  line OS "$(. /etc/os-release && echo "$PRETTY_NAME")"
+  ip=$(ip4)
+  # Right after the container starts, the console logs in before DHCP gives the address
+  while [ -z "$ip" ] && [ "$(cut -d. -f1 /proc/uptime)" -lt 30 ]; do
+    sleep 1
+    ip=$(ip4)
+  done
+  line IP "${ip:-none}"
+  line Memory "$(awk 'function h(k) {return k >= 1048576 ? sprintf("%.1fG", k / 1048576) : sprintf("%dM", k / 1024)} /^MemTotal:/ {t = $2} /^MemAvailable:/ {a = $2} END {print h(t - a) " used of " h(t)}' /proc/meminfo)"
+  line Disk "$(df -hP / | awk 'NR==2 {print $3 " used of " $2 " (" $5 ")"}')"
+  line Uptime "$(awk '{printf "%dd %dh %dm\n", $1 / 86400, $1 % 86400 / 3600, $1 % 3600 / 60}' /proc/uptime)"
+  echo
+)
+EOF
+}
+
+# Console autologin when there is no root password, and the in-container update command
+customize() {
+  if [[ "$ROOT_PASSWORD" == "" ]]; then
+    msg_info "Enabling console autologin"
+    if is_alpine; then
+      # login -f logs root in without a password, root stays locked
+      printf '#!/bin/sh\nexec /bin/login -f root\n' >/usr/local/bin/autologin
+      chmod +x /usr/local/bin/autologin
+      sed -i 's|^tty1:.*|tty1::respawn:/sbin/getty -n -l /usr/local/bin/autologin 38400 tty1|' /etc/inittab
+      # Proxmox rewrites the getty lines of inittab at each start, unless this file exists
+      touch /etc/.pve-ignore.inittab
+      # init reloads inittab, the old tty1 getty is stopped so the new one takes its place
+      kill -HUP 1
+      pkill -f '^/sbin/getty 38400 tty1$' || true
+    else
+      GETTY_OVERRIDE="/etc/systemd/system/container-getty@1.service.d/override.conf"
+      mkdir -p $(dirname $GETTY_OVERRIDE)
+      cat <<EOF >$GETTY_OVERRIDE
+  [Service]
+  ExecStart=
+  ExecStart=-/sbin/agetty --autologin root --noclear --keep-baud tty%I 115200,38400,9600 \$TERM
+EOF
+      systemctl daemon-reload
+      systemctl restart $(basename $(dirname $GETTY_OVERRIDE) | sed 's/\.d//')
+    fi
+    msg_ok "Enabled console autologin"
+  fi
+  if is_alpine; then
+    # whiptail, and tput for its colors, used by the update command
+    $STD apk add newt ncurses
+  fi
+  echo "bash -c \"\$(curl -fsSL ${REPO_RAW}/lxc/${APP_SLUG}.sh)\"" >/usr/bin/update
+  chmod +x /usr/bin/update
+}
+
+# Nothing to do on Alpine: apk keeps no cache and drops unneeded dependencies itself
+clean_packages() {
+  if is_alpine; then
+    return
+  fi
+  msg_info "Cleaning up container packages"
+  $STD apt-get -y autoremove
+  $STD apt-get clean
+  msg_ok "Cleaned up container packages"
+}

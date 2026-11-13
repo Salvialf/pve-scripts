@@ -898,13 +898,7 @@ run_tool() {
 
 # Downloaded before anything is created, so a failure leaves no container behind
 download_install_files() {
-  local install_file
-  if [ "$var_os" == "alpine" ]; then
-    install_file="alpine-install.func"
-  else
-    install_file="debian-install.func"
-  fi
-  download INSTALL_FUNC "lib/$install_file"
+  download INSTALL_FUNC lib/install.func
   download INSTALL_SCRIPT "install/${APP_SLUG}-install.sh"
   declare -gA TOOL_SCRIPTS=()
   device_tools download_tool

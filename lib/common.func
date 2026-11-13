@@ -120,65 +120,6 @@ silent() {
   return $status
 }
 
-# Run by every install script before the app's own steps, with the family's install functions
-prepare_container() {
-  color
-  verb_ip6
-  catch_errors
-  configure_os
-  update_packages
-  # Used by the app installs and the update command
-  msg_info "Installing curl"
-  install_packages curl
-  msg_ok "Installed curl"
-}
-
-# Run by every install script after the app's own steps
-finish_container() {
-  motd_ssh
-  customize
-  clean_packages
-}
-
-# Login banner read at each login, so the IP, disk and OS stay current; sh and BusyBox compatible, for Alpine
-login_banner() {
-  cat <<EOF >/etc/profile.d/pve-scripts-motd.sh
-# Login banner written by pve-scripts
-case \$- in
-  *i*) ;;
-  *) return ;;
-esac
-(
-  APP="$APP"
-EOF
-  cat <<'EOF' >>/etc/profile.d/pve-scripts-motd.sh
-  line() {
-    printf '  \033[33m%-9s\033[m %s\n' "$1" "$2"
-  }
-  ip4() {
-    ip -4 route get 1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p'
-  }
-  # Console only: over SSH this would wipe the user's own terminal history
-  case $(tty) in
-    /dev/tty[0-9]* | /dev/console) printf '\033[3J\033[H\033[2J' ;;
-  esac
-  printf '\n\033[1;33m%s LXC\033[m, by pve-scripts\n' "$APP"
-  line OS "$(. /etc/os-release && echo "$PRETTY_NAME")"
-  ip=$(ip4)
-  # Right after the container starts, the console logs in before DHCP gives the address
-  while [ -z "$ip" ] && [ "$(cut -d. -f1 /proc/uptime)" -lt 30 ]; do
-    sleep 1
-    ip=$(ip4)
-  done
-  line IP "${ip:-none}"
-  line Memory "$(awk 'function h(k) {return k >= 1048576 ? sprintf("%.1fG", k / 1048576) : sprintf("%dM", k / 1024)} /^MemTotal:/ {t = $2} /^MemAvailable:/ {a = $2} END {print h(t - a) " used of " h(t)}' /proc/meminfo)"
-  line Disk "$(df -hP / | awk 'NR==2 {print $3 " used of " $2 " (" $5 ")"}')"
-  line Uptime "$(awk '{printf "%dd %dh %dm\n", $1 / 86400, $1 % 86400 / 3600, $1 % 3600 / 60}' /proc/uptime)"
-  echo
-)
-EOF
-}
-
 spinner() {
     local chars="/-\|"
     local spin_i=0
@@ -355,7 +296,7 @@ wt() {
 
 # Creates the container on a Proxmox host or runs the app's update inside the container
 create_or_update() {
-  local build_func
+  local build_func install_func
   if command -v pveversion >/dev/null 2>&1; then
     pve_check
     root_check
@@ -370,6 +311,8 @@ create_or_update() {
   else
     header_info
     wt --title "UPDATE CONTAINER" --yesno "This will update the ${APP} LXC. Proceed?" || exit-script
+    download install_func lib/install.func
+    source /dev/stdin <<< "$install_func"
     std_mode
     # Optional in the lxc script: app_pre_update prepares apt (e.g. a repository key), app_update updates what apt doesn't
     if declare -F app_pre_update >/dev/null; then
@@ -384,53 +327,5 @@ create_or_update() {
     fi
     clean_packages
     exit
-  fi
-}
-
-# Inside a container: Alpine, else the Debian family (Debian, Ubuntu)
-is_alpine() {
-  [ -f /etc/alpine-release ]
-}
-
-# Unlike dist-upgrade, never removes a package, and keeps the config files the user changed
-update_packages() {
-  msg_info "Updating container packages"
-  if is_alpine; then
-    $STD apk -U upgrade
-  else
-    export DEBIAN_FRONTEND=noninteractive
-    $STD apt-get update
-    $STD apt-get -y --with-new-pkgs -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade
-  fi
-  msg_ok "Updated container packages"
-}
-
-# Nothing to do on Alpine: apk keeps no cache and drops unneeded dependencies itself
-clean_packages() {
-  if is_alpine; then
-    return
-  fi
-  msg_info "Cleaning up container packages"
-  $STD apt-get -y autoremove
-  $STD apt-get clean
-  msg_ok "Cleaned up container packages"
-}
-
-install_packages() {
-  if is_alpine; then
-    $STD apk add "$@"
-  else
-    $STD apt-get install -y "$@"
-  fi
-}
-
-# Starts service $1 at each boot, and restarts it now so it reads its current configuration
-enable_service() {
-  if is_alpine; then
-    $STD rc-update add "$1"
-    $STD rc-service "$1" restart
-  else
-    systemctl enable -q "$1"
-    systemctl restart "$1"
   fi
 }
