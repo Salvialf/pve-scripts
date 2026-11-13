@@ -52,6 +52,6 @@ customize() {
   fi
   # whiptail, and tput for its colors, used by the update command
   $STD apk add newt ncurses
-  echo "bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/${APP_SLUG}.sh)\"" >/usr/bin/update
+  echo "bash -c \"\$(curl -fsSL ${REPO_RAW}/lxc/${APP_SLUG}.sh)\"" >/usr/bin/update
   chmod +x /usr/bin/update
 }

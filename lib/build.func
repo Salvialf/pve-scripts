@@ -888,16 +888,7 @@ create_container() {
 }
 
 download_tool() {
-  if [ -z "${TOOLS_FUNC:-}" ]; then
-    TOOLS_FUNC=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/tools.func) || {
-      msg_error "Unable to download tools.func"
-      exit 1
-    }
-  fi
-  TOOL_SCRIPTS[$1]=$(curl -fsSL "https://raw.githubusercontent.com/Salvialf/pve-scripts/main/tools/$1") || {
-    msg_error "Unable to download $1"
-    exit 1
-  }
+  download "TOOL_SCRIPTS[$1]" "tools/$1"
 }
 
 # Runs tools/$1 on the container being created, with the functions already loaded here. The other arguments are the tool's variables
@@ -913,16 +904,13 @@ download_install_files() {
   else
     install_file="debian-install.func"
   fi
-  INSTALL_FUNC=$(curl -fsSL "https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/$install_file") || {
-    msg_error "Unable to download $install_file"
-    exit 1
-  }
-  INSTALL_SCRIPT=$(curl -fsSL "https://raw.githubusercontent.com/Salvialf/pve-scripts/main/install/${APP_SLUG}-install.sh") || {
-    msg_error "Unable to download ${APP_SLUG}-install.sh"
-    exit 1
-  }
+  download INSTALL_FUNC "lib/$install_file"
+  download INSTALL_SCRIPT "install/${APP_SLUG}-install.sh"
   declare -gA TOOL_SCRIPTS=()
   device_tools download_tool
+  if [ ${#TOOL_SCRIPTS[@]} -gt 0 ]; then
+    download TOOLS_FUNC lib/tools.func
+  fi
 }
 
 # Calls $1 for each device setting with its tool and the tool's variables: download_tool, then run_tool before the first start
@@ -1032,7 +1020,7 @@ description() {
   local repo="https://github.com/Salvialf/pve-scripts"
   pct set "$CT_ID" -description "$(cat <<EOF
 <div align="center">
-<a href="$repo" target="_blank"><img src="https://raw.githubusercontent.com/Salvialf/pve-scripts/main/logos/pve-scripts.svg" alt="pve-scripts"></a>
+<a href="$repo" target="_blank"><img src="$REPO_RAW/logos/pve-scripts.svg" alt="pve-scripts"></a>
 
 ## ${APP} LXC
 

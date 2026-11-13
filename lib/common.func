@@ -7,6 +7,18 @@
 # Regex ranges like [a-z] stay ASCII whatever the locale, not exported to the commands
 LC_COLLATE=C
 
+REPO_RAW="https://raw.githubusercontent.com/Salvialf/pve-scripts/main"
+
+# Puts the repository's file $2 into variable $1, stops the script when it can't be downloaded
+download() {
+  local content
+  content=$(curl -fsSL "$REPO_RAW/$2") || {
+    msg_error "Unable to download ${2##*/}"
+    exit 1
+  }
+  printf -v "$1" '%s' "$content"
+}
+
 # Run by every lxc script after its APP and var_* settings
 init_script() {
   header_info
@@ -31,10 +43,7 @@ init_tool() {
   root_check
   # Given by build.func when the tool runs during a container creation
   if [ -z "${TOOLS_FUNC:-}" ]; then
-    TOOLS_FUNC=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/tools.func) || {
-      msg_error "Unable to download tools.func"
-      exit 1
-    }
+    download TOOLS_FUNC lib/tools.func
   fi
   source /dev/stdin <<< "$TOOLS_FUNC"
 }
@@ -352,10 +361,7 @@ create_or_update() {
     root_check
     arch_check
     ssh_check
-    build_func=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/build.func) || {
-      msg_error "Unable to download build.func"
-      exit 1
-    }
+    download build_func lib/build.func
     source /dev/stdin <<< "$build_func"
     choose_settings
     build_container
