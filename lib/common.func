@@ -41,7 +41,7 @@ init_tool() {
   catch_errors
   pve_check
   root_check
-  # Given by build.func when the tool runs during a container creation
+  # Given by create.func when the tool runs during a container creation
   if [ -z "${TOOLS_FUNC:-}" ]; then
     download TOOLS_FUNC lib/tools.func
   fi
@@ -59,7 +59,7 @@ gpu_vendor() {
   esac
 }
 
-# Shows the script's LOGO, except for a tool run by build.func (HEADER=no)
+# Shows the script's LOGO, except for a tool run by create.func (HEADER=no)
 header_info() {
   if [ "${HEADER:-}" == "no" ]; then
     return
@@ -296,14 +296,14 @@ wt() {
 
 # Creates the container on a Proxmox host or runs the app's update inside the container
 create_or_update() {
-  local build_func install_func
+  local create_func install_func
   if command -v pveversion >/dev/null 2>&1; then
     pve_check
     root_check
     arch_check
     ssh_check
-    download build_func lib/build.func
-    source /dev/stdin <<< "$build_func"
+    download create_func lib/create.func
+    source /dev/stdin <<< "$create_func"
     choose_settings
     build_container
     description
