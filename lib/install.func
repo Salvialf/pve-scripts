@@ -29,12 +29,14 @@ prepare_container() {
 }
 
 disable_ipv6() {
+  msg_info "Disabling IPv6"
   printf "net.ipv6.conf.all.disable_ipv6 = 1\nnet.ipv6.conf.default.disable_ipv6 = 1\n" >/etc/sysctl.d/99-disable-ipv6.conf
   $STD sysctl -e -p /etc/sysctl.d/99-disable-ipv6.conf
   # OpenRC applies sysctl.d again at each boot only through its sysctl service
   if is_alpine; then
     $STD rc-update add sysctl boot
   fi
+  msg_ok "Disabled IPv6"
 }
 
 # Timezone, plus the locale on Debian and Ubuntu
@@ -58,6 +60,7 @@ configure_os() {
 
 # apt goes through the APT-Cacher while it answers, directly otherwise. Debian and Ubuntu only, the menu skips it on Alpine
 use_apt_cacher() {
+  msg_info "Configuring the APT-Cacher"
   echo "Acquire::http::Proxy-Auto-Detect \"/usr/local/bin/apt-proxy-detect.sh\";" >/etc/apt/apt.conf.d/00aptproxy
   cat <<EOF >/usr/local/bin/apt-proxy-detect.sh
 #!/bin/bash
@@ -68,6 +71,7 @@ else
 fi
 EOF
   chmod +x /usr/local/bin/apt-proxy-detect.sh
+  msg_ok "Configured the APT-Cacher"
 }
 
 # Unlike dist-upgrade, never removes a package, and keeps the config files the user changed
@@ -117,6 +121,7 @@ finish_container() {
 
 # At install only: update reruns login_banner, and .bashrc/.profile would get one more TERM line each time
 configure_login() {
+  msg_info "Configuring the login banner"
   # Alpine's login shell (ash) doesn't read .bashrc
   if is_alpine; then
     echo "export TERM='xterm-256color'" >>/root/.profile
@@ -127,6 +132,7 @@ configure_login() {
   login_banner
   # Emptied, not removed: base-files would write Debian's legal notice back
   : >/etc/motd
+  msg_ok "Configured the login banner"
 }
 
 # Login banner read at each login, so the IP, disk and OS stay current; sh and BusyBox compatible, for Alpine
@@ -169,6 +175,7 @@ EOF
 }
 
 enable_root_ssh() {
+  msg_info "Enabling root SSH access"
   if is_alpine; then
     # The Alpine template has no SSH server
     $STD apk add openssh
@@ -180,6 +187,7 @@ enable_root_ssh() {
   else
     systemctl restart sshd
   fi
+  msg_ok "Enabled root SSH access"
 }
 
 enable_autologin() {
@@ -210,12 +218,14 @@ EOF
 
 # The update command reruns the app's lxc script inside the container
 install_update_command() {
+  msg_info "Installing the update command"
   if is_alpine; then
     # whiptail, and tput for its colors
     $STD apk add newt ncurses
   fi
   echo "bash -c \"\$(curl -fsSL ${REPO_RAW}/lxc/${APP_SLUG}.sh)\"" >/usr/bin/update
   chmod +x /usr/bin/update
+  msg_ok "Installed the update command"
 }
 
 # Nothing to do on Alpine: apk keeps no cache and drops unneeded dependencies itself
