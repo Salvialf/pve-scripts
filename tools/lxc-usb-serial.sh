@@ -3,7 +3,10 @@
 # Author: Salvialf
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
-COMMON_FUNC=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/common.func) || { echo "Unable to download common.func"; exit 1; }
+# Given by build.func when the tool runs during a container creation
+if [ -z "${COMMON_FUNC:-}" ]; then
+  COMMON_FUNC=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/common.func) || { echo "Unable to download common.func"; exit 1; }
+fi
 source /dev/stdin <<< "$COMMON_FUNC"
 
 LOGO=$(cat <<"EOF"

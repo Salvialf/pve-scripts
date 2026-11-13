@@ -20,7 +20,6 @@ init_script() {
 
 # Run by every tool after its TOOL_NAME setting, the tools share one palette
 init_tool() {
-  local tools_func
   header_info
   BACKTITLE="Salvialf PVE scripts - $TOOL_NAME"
   var_color_primary="color220"
@@ -30,11 +29,14 @@ init_tool() {
   catch_errors
   pve_check
   root_check
-  tools_func=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/tools.func) || {
-    msg_error "Unable to download tools.func"
-    exit 1
-  }
-  source /dev/stdin <<< "$tools_func"
+  # Given by build.func when the tool runs during a container creation
+  if [ -z "${TOOLS_FUNC:-}" ]; then
+    TOOLS_FUNC=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/tools.func) || {
+      msg_error "Unable to download tools.func"
+      exit 1
+    }
+  fi
+  source /dev/stdin <<< "$TOOLS_FUNC"
 }
 
 # Vendor of a GPU render node (renderD128...), from its PCI id

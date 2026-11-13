@@ -887,14 +887,22 @@ create_container() {
   msg_ok "LXC container ${BL}$CT_ID${CL} ${GN}was successfully created"
 }
 
-# Runs tools/$1 on the container being created, before its first start. The other arguments are the tool's variables
-run_tool() {
-  local tool
-  tool=$(curl -fsSL "https://raw.githubusercontent.com/Salvialf/pve-scripts/main/tools/$1") || {
+download_tool() {
+  if [ -z "${TOOLS_FUNC:-}" ]; then
+    TOOLS_FUNC=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/tools.func) || {
+      msg_error "Unable to download tools.func"
+      exit 1
+    }
+  fi
+  TOOL_SCRIPTS[$1]=$(curl -fsSL "https://raw.githubusercontent.com/Salvialf/pve-scripts/main/tools/$1") || {
     msg_error "Unable to download $1"
     exit 1
   }
-  env CT_ID="$CT_ID" HEADER="no" "${@:2}" bash -c "$tool"
+}
+
+# Runs tools/$1 on the container being created, with the functions already loaded here. The other arguments are the tool's variables
+run_tool() {
+  env CT_ID="$CT_ID" HEADER="no" COMMON_FUNC="$COMMON_FUNC" TOOLS_FUNC="$TOOLS_FUNC" "${@:2}" bash -c "${TOOL_SCRIPTS[$1]}"
 }
 
 # Downloaded before anything is created, so a failure leaves no container behind
@@ -913,18 +921,20 @@ download_install_files() {
     msg_error "Unable to download ${APP_SLUG}-install.sh"
     exit 1
   }
+  declare -gA TOOL_SCRIPTS=()
+  device_tools download_tool
 }
 
-# Device settings, applied before the first start
-add_devices() {
+# Calls $1 for each device setting with its tool and the tool's variables: download_tool, then run_tool before the first start
+device_tools() {
   if [ -n "$GPU_DEVICE" ]; then
-    run_tool lxc-gpu.sh GPU_DEVICE="$GPU_DEVICE"
+    "$1" lxc-gpu.sh GPU_DEVICE="$GPU_DEVICE"
   fi
   if [ "$TUN" == "yes" ]; then
-    run_tool lxc-tun.sh
+    "$1" lxc-tun.sh
   fi
   if [ -n "$USB_DEVICES" ]; then
-    run_tool lxc-usb-serial.sh USB_DEVICES="$USB_DEVICES"
+    "$1" lxc-usb-serial.sh USB_DEVICES="$USB_DEVICES"
   fi
 }
 
@@ -1002,7 +1012,7 @@ run_install() {
 build_container() {
   download_install_files
   create_container
-  add_devices
+  device_tools run_tool
   start_container
   wait_for_network
   network_check
