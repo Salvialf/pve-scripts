@@ -5,7 +5,8 @@
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 # Source: https://github.com/AdguardTeam/AdGuardHome
 
-source /dev/stdin <<< "$FUNCTIONS_FILE_PATH"
+source /dev/stdin <<< "$COMMON_FUNC"
+source /dev/stdin <<< "$INSTALL_FUNC"
 prepare_container
 
 msg_info "Installing AdGuard Home"
