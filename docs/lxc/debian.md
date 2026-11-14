@@ -34,7 +34,7 @@ The host's GPU, TUN device and USB serial devices can be given to the container 
 
 ## Update
 
-Run `update` from the container's console to upgrade its OS packages.
+Run `update` from the container's console to upgrade its OS packages. When a newer Debian release exists it also says so: follow Debian's [upgrade guide](https://www.debian.org/releases/stable/release-notes/upgrading.html) to move the container to it.
 
 ## Credits
 

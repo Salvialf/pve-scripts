@@ -34,7 +34,7 @@ The host's GPU, TUN device and USB serial devices can be given to the container 
 
 ## Update
 
-Run `update` from the container's console to upgrade its OS packages.
+Run `update` from the container's console to upgrade its OS packages. When a newer Ubuntu LTS release exists it also says so: follow Ubuntu's [upgrade guide](https://ubuntu.com/server/docs/how-to/software/upgrade-your-release/) to move the container to it.
 
 ## Credits
 

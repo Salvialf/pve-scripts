@@ -9,6 +9,7 @@
 ### Added
 
 - `update` now offers to move an Alpine container to the latest Alpine release when a newer one exists.
+- `update` now says when a newer Debian release or Ubuntu LTS release exists, with a link to the official upgrade guide.
 
 ## 2026-11-13
 

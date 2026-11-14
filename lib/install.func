@@ -87,10 +87,15 @@ update_packages() {
   msg_ok "Updated container packages"
 }
 
-# Offers the latest Alpine release, silent when the mirror doesn't answer or the release is already the latest
+# Offers the latest Alpine release, or says a newer Debian or Ubuntu release exists; silent when it can't tell
 check_os_release() {
-  local line current latest
+  local current latest
+  # Set by apps that need their OS version, e.g. Jeedom on Debian 12
+  if [ -n "${var_os_version:-}" ]; then
+    return
+  fi
   if is_alpine; then
+    local line
     line=$(grep -m 1 -E '^https?://.+/v[0-9]+\.[0-9]+/main$' /etc/apk/repositories) || return 0
     current=${line##*/v}
     current=${current%/main}
@@ -115,6 +120,34 @@ check_os_release() {
     else
       msg_warn "Restart the container so its services run the upgraded versions"
     fi
+  else
+    local id codename suite guide
+    # A subshell, so os-release's NAME, VERSION... don't land in the script
+    read -r id current codename < <(. /etc/os-release && echo "$ID $VERSION_ID $VERSION_CODENAME")
+    case "$id" in
+      debian)
+        # apt-get update just fetched it: the release's suite becomes oldstable once a newer one is out
+        suite=$(awk '/^Suite:/ {print $2; exit}' /var/lib/apt/lists/*_dists_"${codename}"_InRelease 2>/dev/null) || return 0
+        case "$suite" in
+          oldstable) latest=$((current + 1)) ;;
+          oldoldstable) latest=$((current + 2)) ;;
+          *) return ;;
+        esac
+        guide="https://www.debian.org/releases/stable/release-notes/upgrading.html"
+        ;;
+      ubuntu)
+        # The list do-release-upgrade reads: an LTS gets in at its first point release
+        latest=$(curl -fsSL https://changelogs.ubuntu.com/meta-release-lts 2>/dev/null | awk '/^Version:/ {split($2, v, "."); version = v[1] "." v[2]} /^Supported: 1/ {latest = version} END {print latest}') || return 0
+        if ! [[ "$latest" =~ ^[0-9]+\.[0-9]+$ ]] || ! dpkg --compare-versions "$latest" gt "$current"; then
+          return
+        fi
+        guide="https://ubuntu.com/server/docs/how-to/software/upgrade-your-release/"
+        ;;
+      *)
+        return
+        ;;
+    esac
+    msg_warn "${id^} $latest is available, this container runs $current. Upgrade guide: $guide"
   fi
 }
 
