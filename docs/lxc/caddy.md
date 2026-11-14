@@ -1,6 +1,6 @@
 # Caddy LXC
 
-[Caddy](https://caddyserver.com/) is a web server and reverse proxy that gets and renews its HTTPS certificates on its own. This script installs it from Caddy's official Debian repository.
+[Caddy](https://caddyserver.com/) is a web server and reverse proxy that gets and renews its HTTPS certificates on its own. This script installs it from Caddy's official repository.
 
 > [!IMPORTANT]
 > - Run the commands on this page in the Shell of the Proxmox VE host (node > Shell).
