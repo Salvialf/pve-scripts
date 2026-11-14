@@ -29,7 +29,7 @@ Each container page gives the command to run in the Proxmox VE Shell, for exampl
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/debian.sh)"
 ```
 
-The script opens a settings menu with the container's recommended settings. Its first line **Create the *App name* LXC** creates the container with these settings. The other lines open a category to change only what you need, then come back to the menu:
+The script opens a settings menu with the container's recommended settings. Its first line **Create the LXC** creates the container with these settings. The other lines open a category to change only what you need, then come back to the menu:
 
 | Category | Settings |
 |---|---|
