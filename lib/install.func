@@ -110,6 +110,7 @@ check_os_release() {
     $STD apk upgrade --available
     msg_ok "Upgraded to Alpine $latest"
     if wt --title "ALPINE RELEASE" --yesno "The services only run their upgraded version after a restart.\nRestart the container now?"; then
+      msg_info "Restarting the container"
       reboot
     else
       msg_warn "Restart the container so its services run the upgraded versions"
