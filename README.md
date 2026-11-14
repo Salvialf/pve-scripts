@@ -10,6 +10,9 @@
 
 Scripts to create ready-to-use LXC containers from a single settings menu, in the spirit of tteck's original [Proxmox VE Helper-Scripts](https://github.com/tteck/Proxmox): simple, readable end to end, driven by one command on the Proxmox host.
 
+> [!IMPORTANT]
+> As with any script found online, read it before running it on your host.
+
 ## Requirements
 
 - Proxmox VE 8.1 or later (8.x and 9.x)
@@ -20,22 +23,32 @@ Scripts to create ready-to-use LXC containers from a single settings menu, in th
 
 ## Usage
 
-Each app page gives the command to run in the Proxmox VE Shell, for example:
+Each container page gives the command to run in the Proxmox VE Shell, for example:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lxc/debian.sh)"
 ```
 
-The script creates the container, then installs the app inside it. Before creating anything, a settings menu shows the app's recommended settings, grouped by category:
+The script opens a settings menu with the container's recommended settings. Its first line **Create the *App name* LXC** creates the container with these settings. The other lines open a category to change only what you need, then come back to the menu:
 
-- **Create** right away to use them as they are.
-- Open a category (General, Access, Resources, Network, DNS, Options, Devices, plus the app's own settings when it has any) to change only what you need, then come back to the menu.
+| Category | Settings |
+|---|---|
+| General | Distribution and version, container ID, hostname, unprivileged or privileged container |
+| Access | Root password, root SSH access |
+| Resources | Template and container storages, disk size, CPU cores, RAM |
+| Network | Bridge, DHCP or static IPv4 and gateway, IPv6, VLAN, MAC address, MTU |
+| DNS | DNS server, search domain |
+| Options | Start at boot, Docker support, APT-Cacher, verbose mode |
+| Devices | GPU, TUN device, USB serial devices |
+| *App name* | The app's own settings when it has any |
 
-To update an existing container, run `update` from its console. Each app page says what it updates.
+The script then creates the container and installs the app inside it. A distribution container only gets its base system set up.
 
-To change a setting after creation, see [Changing settings later](docs/settings.md).
+## After creation
 
-As with any script found online, read it before running it on your host.
+Run `update` from the container's console to upgrade its packages and its app: each app page says what it updates. `update` also says when a newer release of the container's distribution exists, and on Alpine it offers to move the container to it.
+
+To change a setting later, see [Changing settings later](docs/settings.md).
 
 ## Containers
 
