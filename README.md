@@ -39,16 +39,23 @@ As with any script found online, read it before running it on your host.
 
 ## Containers
 
-| App | Description |
+### Apps
+
+| App | Distributions | Description |
+|---|---|---|
+| [AdGuard Home](docs/lxc/adguard-home.md) | Debian, Ubuntu, Alpine | DNS server that blocks ads and trackers for the whole network |
+| [Caddy](docs/lxc/caddy.md) | Debian, Ubuntu | Web server and reverse proxy with automatic HTTPS |
+| [Jeedom](docs/lxc/jeedom.md) | Debian | Jeedom home automation software |
+| [Mosquitto](docs/lxc/mosquitto.md) | Debian, Ubuntu, Alpine | MQTT broker, with its user and password set at install |
+| [Z-Wave JS UI](docs/lxc/zwave-js-ui.md) | Debian, Ubuntu | Z-Wave network controller with a web interface |
+
+### Distributions
+
+| Distribution | Description |
 |---|---|
-| [AdGuard Home](docs/lxc/adguard-home.md) | DNS server that blocks ads and trackers for the whole network |
 | [Alpine](docs/lxc/alpine.md) | Minimal Alpine container |
-| [Caddy](docs/lxc/caddy.md) | Web server and reverse proxy with automatic HTTPS |
 | [Debian](docs/lxc/debian.md) | Minimal Debian container |
-| [Jeedom](docs/lxc/jeedom.md) | Jeedom home automation software |
-| [Mosquitto](docs/lxc/mosquitto.md) | MQTT broker, with its user and password set at install |
 | [Ubuntu](docs/lxc/ubuntu.md) | Minimal Ubuntu container |
-| [Z-Wave JS UI](docs/lxc/zwave-js-ui.md) | Z-Wave network controller with a web interface |
 
 ## Tools
 
