@@ -951,11 +951,12 @@ wait_for_network() {
 
 # Internet over IPv4, required by the install, IPv6 only reported, then DNS
 network_check() {
-  local prompt resolved_ip
+  local resolved_ip
   msg_info "Checking the container's Internet access"
   if ct_exec ping -c 1 -W 1 1.1.1.1 &>/dev/null; then
     msg_ok "IPv4 Internet connected"
   else
+    local prompt
     msg_error "No IPv4 Internet access, ping to 1.1.1.1 failed"
     read -r -p "Some networks block ping, continue anyway? <y/N> " prompt
     if [[ ! "${prompt,,}" =~ ^(y|yes)$ ]]; then

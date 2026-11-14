@@ -5,9 +5,9 @@
 
 # The container comes from CT_ID, else from a menu of the host's containers
 tool_choose_ct() {
-  local menu=() id status name
   CT_ID="${CT_ID:-}"
   if [ -z "$CT_ID" ]; then
+    local menu=() id status name
     # pct list columns: VMID Status Lock Name, Lock often empty
     while read -r id status name; do
       menu+=("$id" "$name ($status)")

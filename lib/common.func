@@ -296,8 +296,8 @@ wt() {
 
 # Creates the container on a Proxmox host or runs the app's update inside the container
 create_or_update() {
-  local create_func install_func
   if command -v pveversion >/dev/null 2>&1; then
+    local create_func
     pve_check
     root_check
     arch_check
@@ -309,6 +309,7 @@ create_or_update() {
     description
     msg_ok "Completed successfully!\n"
   else
+    local install_func
     header_info
     wt --title "UPDATE CONTAINER" --yesno "This will update the ${APP} LXC. Proceed?" || exit-script
     download install_func lib/install.func
