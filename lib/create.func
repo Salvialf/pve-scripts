@@ -4,7 +4,7 @@
 # Author: tteck (tteckster) | Salvialf
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
-# Disk, CPU, RAM and OS come from the ct script's var_* variables, else the distribution's defaults
+# Disk, CPU, RAM and OS come from the lxc script's var_* variables, else the distribution's defaults
 default_settings() {
   # The first supported distribution, in its latest version unless the app needs another
   var_os="${var_os_supported%% *}"
@@ -40,13 +40,13 @@ default_settings() {
   TUN="${var_tun:-no}"
   USB_DEVICES=""
   VERBOSE="no"
-  # The ct script's app_settings values, if any
+  # The lxc script's app_settings values, if any
   if declare -F app_default_settings >/dev/null; then
     app_default_settings
   fi
 }
 
-# The ct script's var_disk_<family>, else its var_disk, else the family's default (same for CPU and RAM)
+# The lxc script's var_disk_<family>, else its var_disk, else the family's default (same for CPU and RAM)
 default_resources() {
   local family="debian" disk="2" ram="512" name
   if [ "$var_os" == "alpine" ]; then
@@ -673,7 +673,7 @@ settings_app() {
   run_steps "${app_settings[@]}"
 }
 
-# The values of the ct script's app_summary lines
+# The values of the lxc script's app_summary lines
 summary_app() {
   local values=() line
   while IFS= read -r line; do
@@ -732,7 +732,7 @@ settings_menu() {
     # Back from the first step of a category returns 1: this menu shows again
     case "$choice" in
       create)
-        # The ct script's own checks on the chosen settings, if any
+        # The lxc script's own checks on the chosen settings, if any
         if declare -F app_check >/dev/null && ! app_check; then
           continue
         fi

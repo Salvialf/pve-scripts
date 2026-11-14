@@ -25,7 +25,7 @@ init_script() {
   echo -e "Loading..."
   APP_SLUG=$(echo ${APP,,} | tr -d ' ') # default hostname and install/<slug>-install.sh name
   BACKTITLE="Salvialf PVE scripts - ${APP} LXC" # shown on every whiptail window
-  newt_colors                                   # whiptail palette from the ct script's var_color_*
+  newt_colors                                   # whiptail palette from the lxc script's var_color_*
   color
   catch_errors
 }
