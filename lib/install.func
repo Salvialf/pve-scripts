@@ -87,6 +87,36 @@ update_packages() {
   msg_ok "Updated container packages"
 }
 
+# Offers the latest Alpine release, silent when the mirror doesn't answer or the release is already the latest
+check_os_release() {
+  local line current latest
+  if is_alpine; then
+    line=$(grep -m 1 -E '^https?://.+/v[0-9]+\.[0-9]+/main$' /etc/apk/repositories) || return 0
+    current=${line##*/v}
+    current=${current%/main}
+    # --no-cache: the latest-stable index isn't kept on disk
+    latest=$(apk --no-cache --repositories-file /dev/null -X "${line%/v*}/latest-stable/main" search -x alpine-release 2>/dev/null) || return 0
+    latest=${latest#alpine-release-}
+    latest=${latest%.*}
+    if ! [[ "$latest" =~ ^[0-9]+\.[0-9]+$ ]] || [ "$(apk version -t "$latest" "$current")" != ">" ]; then
+      return
+    fi
+    wt --defaultno --title "ALPINE RELEASE" --yesno "Alpine $latest is available, this container runs $current.\nUpgrade now?" || return 0
+    msg_info "Upgrading to Alpine $latest"
+    sed -i "s#/v$current/#/v$latest/#g" /etc/apk/repositories
+    # Indexes and packages of the old release
+    rm -rf /var/cache/apk/*
+    $STD apk -U add --upgrade apk-tools
+    $STD apk upgrade --available
+    msg_ok "Upgraded to Alpine $latest"
+    if wt --title "ALPINE RELEASE" --yesno "The services only run their upgraded version after a restart.\nRestart the container now?"; then
+      reboot
+    else
+      msg_warn "Restart the container so its services run the upgraded versions"
+    fi
+  fi
+}
+
 install_packages() {
   if is_alpine; then
     $STD apk add "$@"

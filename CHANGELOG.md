@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-14
+
+### Added
+
+- `update` now offers to move an Alpine container to the latest Alpine release when a newer one exists.
+
 ## 2026-11-13
 
 ### Changed
