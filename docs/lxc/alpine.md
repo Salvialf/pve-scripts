@@ -34,7 +34,7 @@ The host's GPU, TUN device and USB serial devices can be given to the container 
 
 ## Update
 
-Run `update` from the container's console to upgrade its OS packages. When a newer Alpine release exists it also offers to move the container to it.
+Run `update` from the container's console to upgrade its OS packages. When a newer Alpine release exists it also offers to move the container to it. Back up the container from Proxmox first: a release upgrade can't be undone.
 
 To move to a newer release by hand, replace the version in its repositories, for example from 3.24 to 3.25, then upgrade and restart:
 

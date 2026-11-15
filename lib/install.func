@@ -106,7 +106,7 @@ check_os_release() {
     if ! [[ "$latest" =~ ^[0-9]+\.[0-9]+$ ]] || [ "$(apk version -t "$latest" "$current")" != ">" ]; then
       return
     fi
-    wt --defaultno --title "ALPINE RELEASE" --yesno "Alpine $latest is available, this container runs $current.\nUpgrade now?" || return 0
+    wt --defaultno --title "ALPINE RELEASE" --yesno "Alpine $latest is available, this container runs $current.\nBack it up from Proxmox before upgrading. Upgrade now?" || return 0
     msg_info "Upgrading to Alpine $latest"
     sed -i "s#/v$current/#/v$latest/#g" /etc/apk/repositories
     # Indexes and packages of the old release
