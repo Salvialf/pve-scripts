@@ -302,3 +302,23 @@ clean_packages() {
   $STD apt-get clean
   msg_ok "Cleaned up container packages"
 }
+
+# Run by the update command
+update_container() {
+  wt --title "UPDATE CONTAINER" --yesno "This will update the ${APP} LXC. Proceed?" || exit-script
+  std_mode
+  # Optional in the lxc script: app_pre_update prepares apt (e.g. a repository key), app_update updates what apt doesn't
+  if declare -F app_pre_update >/dev/null; then
+    app_pre_update
+  fi
+  update_packages
+  if declare -F app_update >/dev/null; then
+    app_update
+  fi
+  if [ -f /etc/profile.d/pve-scripts-motd.sh ]; then
+    login_banner
+  fi
+  clean_packages
+  # Last: it can restart the container
+  check_os_release
+}
