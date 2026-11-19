@@ -295,13 +295,13 @@ wt() {
 }
 
 # Asks a password then its confirmation and prints it, $3 being the current one
-# $4 checks a new password: it shows why it is refused and fails
+# $4, if given, checks a new password: it shows why it is refused and fails
 ask_password() {
-  local title="$1" text="$2" current="$3" check="$4" pw1="$3" pw2
+  local title="$1" text="$2" current="$3" check="${4:-}" pw1="$3" pw2
   while true; do
     # Prefilled with the current password, so going back and forth keeps it
     pw1=$(wt --title "$title" --passwordbox "$text" "$pw1") || return
-    if ! "$check" "$pw1"; then
+    if [ -n "$check" ] && ! "$check" "$pw1"; then
       continue
     fi
     # Blank or already confirmed
