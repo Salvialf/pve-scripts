@@ -47,6 +47,13 @@ function app_summary() {
   echo "Admin page: $([ -n "$VAULTWARDEN_ADMIN_TOKEN" ] && echo "token set" || echo "disabled (no token)")"
 }
 
+# Alpine doesn't restart a service when its package is upgraded
+function app_update() {
+  msg_info "Restarting ${APP}"
+  $STD rc-service vaultwarden restart
+  msg_ok "Restarted ${APP}"
+}
+
 # Run by RESET_ADMIN_TOKEN=yes update, blank disables the admin page
 function reset_admin_token() {
   if [ ! -f /etc/conf.d/vaultwarden ]; then
