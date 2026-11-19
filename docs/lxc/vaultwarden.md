@@ -35,7 +35,7 @@ At the end, the script shows the web vault's address with a self-signed certific
 
 ## HTTPS
 
-Browsers refuse to use Vaultwarden over plain HTTP, so it needs HTTPS in one of two ways:
+Vaultwarden needs HTTPS: over plain HTTP the browser blocks the encryption the web vault relies on. Two ways to get it:
 
 - **Self-signed certificate**: open `https://<IP>:8000` and accept the browser's warning. Only the web vault works this way, the Bitwarden apps need a real certificate. Use it to try Vaultwarden or on a local network.
 - **Separate reverse proxy** (recommended): a reverse proxy you run apart provides HTTPS with a real certificate.
