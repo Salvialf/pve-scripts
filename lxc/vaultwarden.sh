@@ -1,102 +1,102 @@
 #!/usr/bin/env bash
-source <(curl -s https://raw.githubusercontent.com/tteck/Proxmox/main/misc/build.func)
 # Copyright (c) 2021-2024 tteck
-# Author: tteck (tteckster)
-# License: MIT
-# https://github.com/tteck/Proxmox/raw/main/LICENSE
+# Copyright (c) 2026 Salvialf
+# Author: tteck (tteckster) | Salvialf
+# License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
+# Source: https://github.com/dani-garcia/vaultwarden
 
-function header_info {
-  clear
-  cat <<"EOF"
- _    __            ____                          __         
-| |  / /___ ___  __/ / /__      ______ __________/ /__  ____ 
+COMMON_FUNC=$(curl -fsSL https://raw.githubusercontent.com/Salvialf/pve-scripts/main/lib/common.func) || { echo "Unable to download common.func"; exit 1; }
+source /dev/stdin <<< "$COMMON_FUNC"
+
+LOGO=$(cat <<"EOF"
+ _    __            ____                          __
+| |  / /___ ___  __/ / /__      ______ __________/ /__  ____
 | | / / __ `/ / / / / __/ | /| / / __ `/ ___/ __  / _ \/ __ \
 | |/ / /_/ / /_/ / / /_ | |/ |/ / /_/ / /  / /_/ /  __/ / / /
-|___/\__,_/\__,_/_/\__/ |__/|__/\__,_/_/   \__,_/\___/_/ /_/ 
- Alpine                                                 
-
+|___/\__,_/\__,_/_/\__/ |__/|__/\__,_/_/   \__,_/\___/_/ /_/
 EOF
-}
-header_info
-echo -e "Loading..."
-APP="Alpine-Vaultwarden"
-var_disk="0.3"
-var_cpu="1"
-var_ram="256"
-var_os="alpine"
-var_version="3.19"
-variables
-color
-catch_errors
+)
+APP="Vaultwarden"
+# Debian has no package, building it needs several GB of RAM at each update
+var_os_supported="alpine"
+var_onboot="yes"
+var_color_primary="color26"
+app_settings=(step_vaultwarden_https step_vaultwarden_admin_token)
+init_script
 
-function default_settings() {
-  CT_TYPE="1"
-  PW=""
-  CT_ID=$NEXTID
-  HN=$NSAPP
-  DISK_SIZE="$var_disk"
-  CORE_COUNT="$var_cpu"
-  RAM_SIZE="$var_ram"
-  BRG="vmbr0"
-  NET="dhcp"
-  GATE=""
-  APT_CACHER=""
-  APT_CACHER_IP=""
-  DISABLEIP6="no"
-  MTU=""
-  SD=""
-  NS=""
-  MAC=""
-  VLAN=""
-  SSH="no"
-  VERB="no"
-  echo_default
+function step_vaultwarden_https() {
+  local https
+  https=$(wt --title "HTTPS" --notags --default-item "$VAULTWARDEN_HTTPS" --menu "How does Vaultwarden get HTTPS?\nBrowsers refuse plain HTTP and apps need a real certificate\nA reverse proxy such as the Caddy LXC can provide one" \
+    "self-signed" "Self-signed certificate (web vault only)" \
+    "proxy" "Separate reverse proxy (recommended)") || return
+  VAULTWARDEN_HTTPS="$https"
 }
 
-function update_script() {
-  if ! apk -e info newt >/dev/null 2>&1; then
-    apk add -q newt
+function step_vaultwarden_admin_token() {
+  local token
+  token=$(ask_password "ADMIN TOKEN" "Set the token of the admin page (/admin)\nBlank disables the admin page" "$VAULTWARDEN_ADMIN_TOKEN") || return
+  VAULTWARDEN_ADMIN_TOKEN="$token"
+}
+
+function app_default_settings() {
+  export VAULTWARDEN_HTTPS="self-signed" VAULTWARDEN_ADMIN_TOKEN=""
+}
+
+function app_summary() {
+  echo "HTTPS: $([ "$VAULTWARDEN_HTTPS" == "proxy" ] && echo "reverse proxy" || echo "self-signed certificate")"
+  echo "Admin page: $([ -n "$VAULTWARDEN_ADMIN_TOKEN" ] && echo "token set" || echo "disabled (no token)")"
+}
+
+# Run by RESET_ADMIN_TOKEN=yes update, blank disables the admin page
+function reset_admin_token() {
+  if [ ! -f /etc/conf.d/vaultwarden ]; then
+    msg_error "No ${APP} installation found"
+    exit 1
   fi
-  while true; do
-    CHOICE=$(
-      whiptail --backtitle "Proxmox VE Helper Scripts" --title "SUPPORT" --menu "Select option" 11 58 2 \
-        "1" "Update Vaultwarden" \
-        "2" "Reset ADMIN_TOKEN" 3>&2 2>&1 1>&3
-    )
-    exit_status=$?
-    if [ $exit_status == 1 ]; then
-      clear
-      exit-script
-    fi
-    header_info
-    case $CHOICE in
-    1)
-      apk update && apk upgrade && rc-service vaultwarden restart -q
-      exit
-      ;;
-    2)
-      if NEWTOKEN=$(whiptail --backtitle "Proxmox VE Helper Scripts" --passwordbox "Setup your ADMIN_TOKEN (make it strong)" 10 58 3>&1 1>&2 2>&3); then
-        if [[ -z "$NEWTOKEN" ]]; then exit-script; fi
-        if ! command -v argon2 >/dev/null 2>&1; then apk add argon2 &>/dev/null; fi
-        TOKEN=$(echo -n ${NEWTOKEN} | argon2 "$(openssl rand -base64 32)" -e -id -k 19456 -t 2 -p 1)
-        if [[ ! -f /var/lib/vaultwarden/config.json ]]; then
-          sed -i "s|export ADMIN_TOKEN=.*|export ADMIN_TOKEN='${TOKEN}'|" /etc/conf.d/vaultwarden
-        else
-          sed -i "s|\"admin_token\": .*|\"admin_token\": \"${TOKEN}\",|" /var/lib/vaultwarden/config.json
-        fi
-        rc-service vaultwarden restart -q
-      fi      
-      clear
-      exit
-      ;;
-    esac
-  done
+  local hash config=/var/lib/vaultwarden/config.json
+  VAULTWARDEN_ADMIN_TOKEN=""
+  step_vaultwarden_admin_token || exit-script
+  std_mode
+  msg_info "Setting the admin token"
+  sed -i '/^export ADMIN_TOKEN=/d' /etc/conf.d/vaultwarden
+  if [ -n "$VAULTWARDEN_ADMIN_TOKEN" ]; then
+    $STD apk add argon2
+    # Settings recommended by the Vaultwarden wiki (OWASP)
+    hash=$(printf '%s' "$VAULTWARDEN_ADMIN_TOKEN" | argon2 "$(head -c 32 /dev/urandom | base64)" -e -id -k 19456 -t 2 -p 1)
+    echo "export ADMIN_TOKEN='${hash}'" >>/etc/conf.d/vaultwarden
+  fi
+  # Saving the admin page writes the token to config.json, which overrides conf.d
+  if [ -f "$config" ]; then
+    $STD apk add jq
+    jq 'del(.admin_token)' "$config" >/tmp/config.json
+    # Rewritten in place, so the file keeps its owner
+    cat /tmp/config.json >"$config"
+    rm /tmp/config.json
+  fi
+  $STD rc-service vaultwarden restart
+  if [ -n "$VAULTWARDEN_ADMIN_TOKEN" ]; then
+    msg_ok "Set the admin token"
+  else
+    msg_ok "Disabled the admin page"
+  fi
 }
 
-start
-build_container
-description
+if [ "${RESET_ADMIN_TOKEN:-}" == "yes" ]; then
+  if command -v pveversion >/dev/null 2>&1; then
+    msg_error "Run RESET_ADMIN_TOKEN=yes update inside the ${APP} container"
+    exit 1
+  fi
+  reset_admin_token
+  exit
+fi
 
-msg_ok "Completed Successfully!\n"
-echo -e "${APP} should be reachable by going to the following URL.
-         ${BL}http://${IP}:8000${CL} \n"
+create_or_update
+if [ "$VAULTWARDEN_HTTPS" == "proxy" ]; then
+  echo -e "Point your reverse proxy at the following address:
+         ${BL}$(get_ip):8000${CL}
+         Then open ${APP} at your reverse proxy's HTTPS address\n"
+else
+  echo -e "Access ${APP} at the following URL:
+         ${BL}https://$(get_ip):8000${CL}
+         Accept the browser's warning about the self-signed certificate\n"
+fi

@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-19
+
+### Added
+
+- [Vaultwarden container](docs/lxc/vaultwarden.md) on Alpine, with HTTPS from a self-signed certificate or a separate reverse proxy, and an optional admin page token that `RESET_ADMIN_TOKEN=yes update` can change later.
+
 ## 2026-11-14
 
 ### Added
