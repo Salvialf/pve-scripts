@@ -73,6 +73,15 @@ function app_check() {
   fi
 }
 
+# Alpine doesn't restart a service when its package is upgraded
+function app_update() {
+  if is_alpine; then
+    msg_info "Restarting ${APP}"
+    $STD rc-service mosquitto restart
+    msg_ok "Restarted ${APP}"
+  fi
+}
+
 create_or_update
 echo -e "Connect the MQTT clients to the following address:
          ${BL}$(get_ip):1883${CL}
