@@ -39,7 +39,7 @@ The script opens a settings menu with the container's recommended settings. Its 
 | Network | Bridge, DHCP or static IPv4 and gateway, IPv6, VLAN, MAC address, MTU |
 | DNS | DNS server, search domain |
 | Options | Start at boot, Docker support, APT-Cacher, verbose mode |
-| Devices | GPU, TUN device, USB serial devices |
+| Devices | GPU, TUN device, USB serial devices (distribution containers and apps that use them) |
 | *App name* | The app's own settings when it has any |
 
 The script then creates the container and installs the app inside it. A distribution container only gets its base system set up.

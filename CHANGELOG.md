@@ -13,6 +13,7 @@
 ### Changed
 
 - The container notes in Proxmox only link the device tools for the distribution containers, Jeedom and Z-Wave JS UI. The Vaultwarden notes give the admin token command instead.
+- The settings menu only shows the Devices category for the distribution containers, Jeedom and Z-Wave JS UI. The device tools can still give a device to any other container after its creation.
 
 ### Fixed
 

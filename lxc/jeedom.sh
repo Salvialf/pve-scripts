@@ -23,6 +23,7 @@ var_ram="2048"
 var_os_supported="debian"
 var_os_version="12"
 var_onboot="yes"
+var_devices="yes"
 var_tun="yes"
 var_tun_note="Jeedom uses it for its DNS service"
 var_color_primary="color106"
@@ -84,10 +85,6 @@ function app_default_settings() {
 
 function app_summary() {
   echo "Jeedom branch: $JEEDOM_BRANCH"
-}
-
-function app_description() {
-  description_devices
 }
 
 # Temporary Debian check until https://github.com/jeedom/core/pull/3483 is on master

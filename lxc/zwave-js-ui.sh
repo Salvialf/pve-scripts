@@ -22,12 +22,9 @@ var_cpu="2"
 var_ram="1024"
 var_os_supported="debian ubuntu"
 var_onboot="yes"
+var_devices="yes"
 var_color_primary="color25"
 init_script
-
-function app_description() {
-  description_devices
-}
 
 function app_update() {
   if [[ ! -d /opt/zwave-js-ui ]]; then

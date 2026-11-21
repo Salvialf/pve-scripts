@@ -18,11 +18,8 @@ EOF
 )
 APP="Alpine"
 var_os_supported="alpine"
+var_devices="yes"
 var_color_primary="color24"
 init_script
-
-function app_description() {
-  description_devices
-}
 
 create_or_update
