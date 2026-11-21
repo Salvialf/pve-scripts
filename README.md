@@ -57,7 +57,7 @@ To change a setting later, see [Changing settings later](docs/settings.md).
 | App | Distributions | Description |
 |---|---|---|
 | [AdGuard Home](docs/lxc/adguard-home.md) | Debian, Ubuntu, Alpine | DNS server that blocks ads and trackers for the whole network |
-| [Caddy](docs/lxc/caddy.md) | Debian, Ubuntu | Web server and reverse proxy with automatic HTTPS |
+| [Caddy](docs/lxc/caddy.md) | Debian, Ubuntu, Alpine | Web server and reverse proxy with automatic HTTPS |
 | [Jeedom](docs/lxc/jeedom.md) | Debian | Jeedom home automation software |
 | [Mosquitto](docs/lxc/mosquitto.md) | Debian, Ubuntu, Alpine | MQTT broker, with its user and password set at install |
 | [Vaultwarden](docs/lxc/vaultwarden.md) | Alpine | Password manager server for the Bitwarden apps |

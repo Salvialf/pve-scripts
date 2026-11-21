@@ -9,16 +9,24 @@ source /dev/stdin <<< "$COMMON_FUNC"
 source /dev/stdin <<< "$INSTALL_FUNC"
 prepare_container
 
-msg_info "Installing gpg"
-install_packages gpg
-msg_ok "Installed gpg"
+if is_alpine; then
+  msg_info "Installing Caddy"
+  install_packages caddy
+  # apk neither starts a service nor enables it at boot
+  enable_service caddy
+  msg_ok "Installed Caddy"
+else
+  msg_info "Installing gpg"
+  install_packages gpg
+  msg_ok "Installed gpg"
 
-msg_info "Installing Caddy"
-curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor >/usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt >/etc/apt/sources.list.d/caddy-stable.list
-chmod o+r /usr/share/keyrings/caddy-stable-archive-keyring.gpg /etc/apt/sources.list.d/caddy-stable.list
-$STD apt-get update
-install_packages caddy
-msg_ok "Installed Caddy"
+  msg_info "Installing Caddy"
+  curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor >/usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt >/etc/apt/sources.list.d/caddy-stable.list
+  chmod o+r /usr/share/keyrings/caddy-stable-archive-keyring.gpg /etc/apt/sources.list.d/caddy-stable.list
+  $STD apt-get update
+  install_packages caddy
+  msg_ok "Installed Caddy"
+fi
 
 finish_container

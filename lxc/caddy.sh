@@ -18,7 +18,8 @@ LOGO=$(cat <<"EOF"
 EOF
 )
 APP="Caddy"
-var_os_supported="debian ubuntu"
+var_disk_alpine="1"
+var_os_supported="debian ubuntu alpine"
 var_onboot="yes"
 var_color_primary="color35"
 var_color_theme="dark"
@@ -30,9 +31,20 @@ function app_pre_update() {
     exit 1
   fi
   # Caddy renews its repository key: a copy kept from the install would end up expired and block its updates
-  curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor >/usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  if ! is_alpine; then
+    curl -1sLf https://dl.cloudsmith.io/public/caddy/stable/gpg.key | gpg --dearmor >/usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  fi
+}
+
+# Unlike apt, Alpine doesn't restart a service when its package is upgraded
+function app_update() {
+  if is_alpine; then
+    msg_info "Restarting ${APP}"
+    $STD rc-service caddy restart
+    msg_ok "Restarted ${APP}"
+  fi
 }
 
 create_or_update
-echo -e "Caddy's default page is at the following URL:
-         ${BL}http://$(get_ip)${CL}\n"
+echo -e "Set up Caddy in the container's configuration file:
+         ${BL}/etc/caddy/Caddyfile${CL}\n"
