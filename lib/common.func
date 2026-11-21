@@ -175,9 +175,13 @@ root_check() {
   fi
 }
 
+is_pve() {
+  command -v pveversion >/dev/null 2>&1
+}
+
 # Tested versions only, not a minimum: a new major has to be checked before it gets added
 pve_check() {
-  if ! command -v pveversion >/dev/null 2>&1; then
+  if ! is_pve; then
     msg_error "Run this script on the Proxmox VE host"
     exit 1
   fi
@@ -196,7 +200,7 @@ arch_check() {
 
 # Warns (without blocking) on a genuinely external SSH session: on PVE 9.x the Proxmox WebUI Shell also sets SSH_CLIENT, with a local client IP
 ssh_check() {
-  if command -v pveversion >/dev/null 2>&1 && [ -n "${SSH_CLIENT:+x}" ]; then
+  if [ -n "${SSH_CLIENT:+x}" ]; then
     local client_ip host_ip host_subnet client_subnet
     client_ip=$(awk '{print $1}' <<<"$SSH_CLIENT")
     host_ip=$(hostname -I | awk '{print $1}')
@@ -322,7 +326,7 @@ ask_password() {
 
 # Creates the container on a Proxmox host or runs the app's update inside the container
 create_or_update() {
-  if command -v pveversion >/dev/null 2>&1; then
+  if is_pve; then
     local create_func
     pve_check
     root_check
