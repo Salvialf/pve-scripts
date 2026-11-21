@@ -86,6 +86,10 @@ function app_summary() {
   echo "Jeedom branch: $JEEDOM_BRANCH"
 }
 
+function app_description() {
+  description_devices
+}
+
 # Temporary Debian check until https://github.com/jeedom/core/pull/3483 is on master
 function app_check() {
   if [ "$var_os_version" != "12" ] && [[ "$JEEDOM_BRANCH" =~ ^(master|release)$ ]]; then

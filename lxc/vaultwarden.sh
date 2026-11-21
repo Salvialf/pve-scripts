@@ -47,6 +47,10 @@ function app_summary() {
   echo "Admin page: $([ -n "$VAULTWARDEN_ADMIN_TOKEN" ] && echo "token set" || echo "disabled (no token)")"
 }
 
+function app_description() {
+  echo "**Admin token:** run \`RESET_ADMIN_TOKEN=yes update\` in the container's console."
+}
+
 # Alpine doesn't restart a service when its package is upgraded
 function app_update() {
   msg_info "Restarting ${APP}"

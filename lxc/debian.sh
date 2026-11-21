@@ -19,4 +19,9 @@ APP="Debian"
 var_os_supported="debian"
 var_color_primary="color125"
 init_script
+
+function app_description() {
+  description_devices
+}
+
 create_or_update

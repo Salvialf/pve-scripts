@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-21
+
+### Changed
+
+- The container notes in Proxmox only link the device tools for the distribution containers, Jeedom and Z-Wave JS UI. The Vaultwarden notes give the admin token command instead.
+
 ## 2026-11-19
 
 ### Added

@@ -987,19 +987,27 @@ get_ip() {
 }
 
 description() {
-  local repo="https://github.com/Salvialf/pve-scripts"
-  pct set "$CT_ID" -description "$(cat <<EOF
+  pct set "$CT_ID" -description "$(
+    cat <<EOF
 <div align="center">
-<a href="$repo" target="_blank"><img src="$REPO_RAW/logos/pve-scripts.svg" alt="pve-scripts"></a>
+<a href="$REPO_URL" target="_blank"><img src="$REPO_RAW/logos/pve-scripts.svg" alt="pve-scripts"></a>
 
 ## ${APP} LXC
 
-Created with <a href="$repo" target="_blank">pve-scripts</a> &middot; <a href="$repo/blob/main/docs/lxc/${APP_SLUG}.md" target="_blank">Documentation</a>
+Created with <a href="$REPO_URL" target="_blank">pve-scripts</a> &middot; <a href="$REPO_URL/blob/main/docs/lxc/${APP_SLUG}.md" target="_blank">Documentation</a>
 </div>
 
 **Update:** run \`update\` in the container's console.
-
-**Devices:** host devices can be added or removed with the <a href="$repo#tools" target="_blank">tools</a>.
 EOF
-)"
+    # The lxc script's own lines, if any
+    if declare -F app_description >/dev/null; then
+      echo
+      app_description
+    fi
+  )"
+}
+
+# For apps that use host devices, called from their app_description
+description_devices() {
+  echo "**Devices:** host devices can be added or removed with the <a href=\"$REPO_URL#tools\" target=\"_blank\">tools</a>."
 }

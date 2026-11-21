@@ -25,6 +25,10 @@ var_onboot="yes"
 var_color_primary="color25"
 init_script
 
+function app_description() {
+  description_devices
+}
+
 function app_update() {
   if [[ ! -d /opt/zwave-js-ui ]]; then
     msg_error "No ${APP} installation found"

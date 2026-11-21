@@ -7,6 +7,7 @@
 # Regex ranges like [a-z] stay ASCII whatever the locale, not exported to the commands
 LC_COLLATE=C
 
+REPO_URL="https://github.com/Salvialf/pve-scripts"
 REPO_RAW="https://raw.githubusercontent.com/Salvialf/pve-scripts/main"
 
 # Puts the repository's file $2 into variable $1, stops the script when it can't be downloaded
