@@ -167,10 +167,13 @@ disk_space_warning() {
 
 # step_* functions: one settings window each for run_steps, returning 0 Next, 1 Back, 255 ESC or 2 when nothing is shown
 
-# The latest backup of each container across the backup storages, newest first, the cursor on the one named like the app
-step_base_backup() {
-  local menu=() default="" storages storage stamp vmid volid name date backup
-  local -A ids=() names=() dates=()
+# The latest backup of each container across the backup storages, newest first, into BACKUP_* variables
+# Read once per run: pvesm is slow to start and runs once per storage and per container
+read_backups() {
+  local storages storage stamp vmid volid name date
+  BACKUP_MENU=()
+  BACKUP_OF_APP=""
+  declare -gA BACKUP_IDS=() BACKUP_NAMES=() BACKUP_DATES=()
   echo "Reading the backups..."
   # Proxmox Backup Server is left out, its backups are not vzdump files. An unreachable storage is not active
   storages=$(pvesm status -content backup 2>/dev/null | awk 'NR>1 && $2 != "pbs" && $3 == "active" {print $1}') || true
@@ -179,12 +182,12 @@ step_base_backup() {
     # Stops at the first snapshot section, which has its own hostname
     name=$(pvesm extractconfig "$volid" 2>/dev/null | sed -n '/^\[/q; s/^hostname: //p') || true
     date="${stamp:0:4}-${stamp:5:2}-${stamp:8:2}"
-    ids[$volid]="$vmid"
-    names[$volid]="$name"
-    dates[$volid]="$date"
-    menu+=("$volid" "$(printf '%-6s %s %s  %-15s %s' "$vmid" "$date" "${stamp:11:2}:${stamp:14:2}" "$name" "${volid%%:*}")")
-    if [ -z "$default" ] && [ "$name" == "$APP_SLUG" ]; then
-      default="$volid"
+    BACKUP_IDS[$volid]="$vmid"
+    BACKUP_NAMES[$volid]="$name"
+    BACKUP_DATES[$volid]="$date"
+    BACKUP_MENU+=("$volid" "$(printf '%-6s %s %s  %-15s %s' "$vmid" "$date" "${stamp:11:2}:${stamp:14:2}" "$name" "${volid%%:*}")")
+    if [ -z "$BACKUP_OF_APP" ] && [ "$name" == "$APP_SLUG" ]; then
+      BACKUP_OF_APP="$volid"
     fi
   done < <(
     for storage in $storages; do
@@ -193,20 +196,31 @@ step_base_backup() {
       awk 'match($1, /vzdump-lxc-[0-9]+-[0-9_]+-[0-9_]+\./) {print substr($1, RSTART + RLENGTH - 20, 19), $5, $1}' |
       sort -r | awk '!seen[$2]++' || true
   )
-  if [ ${#menu[@]} -eq 0 ]; then
+  BACKUPS_READ="yes"
+  # whiptail gives back the screen as it found it: without this, the message shows again when the list closes
+  clear
+}
+
+# The cursor on the loaded backup, else the newest one named like the app
+step_base_backup() {
+  local menu default backup
+  if [ -z "${BACKUPS_READ:-}" ]; then
+    read_backups
+  fi
+  if [ ${#BACKUP_MENU[@]} -eq 0 ]; then
     wt --title "BACKUP" --msgbox "No container backup found on this host\nProxmox Backup Server is not supported"
     return 1
   fi
-  menu+=("defaults" "Default settings")
-  default="${BASE_BACKUP:-${default:-${menu[0]}}}"
+  menu=("${BACKUP_MENU[@]}" "defaults" "Default settings")
+  default="${BASE_BACKUP:-${BACKUP_OF_APP:-${menu[0]}}}"
   backup=$(wt --title "BACKUP" --notags --default-item "$default" --menu "Choose the backup to take the container settings from\nIts values replace the current settings" "${menu[@]}") || return
   if [ "$backup" == "defaults" ]; then
     default_settings
     return
   fi
-  apply_backup_config "$backup" "${ids[$backup]}"
+  apply_backup_config "$backup" "${BACKUP_IDS[$backup]}"
   BASE_BACKUP="$backup"
-  BASE_BACKUP_LABEL="${ids[$backup]} ${names[$backup]:-?} ${dates[$backup]}"
+  BASE_BACKUP_LABEL="${BACKUP_IDS[$backup]} ${BACKUP_NAMES[$backup]:-?} ${BACKUP_DATES[$backup]}"
 }
 
 # Puts the container config of backup $1 into the settings, $2 being the backed up container's ID
