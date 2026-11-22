@@ -33,6 +33,7 @@ The script opens a settings menu with the container's recommended settings. Its 
 
 | Category | Settings |
 |---|---|
+| Based on | Default settings or the latest backup of a container on the host's storages (not Proxmox Backup Server), whose settings fill the other categories |
 | General | Distribution and version, container ID, hostname, unprivileged or privileged container |
 | Access | Root password, root SSH access |
 | Resources | Template and container storages, disk size, CPU cores, RAM |
@@ -41,6 +42,8 @@ The script opens a settings menu with the container's recommended settings. Its 
 | Options | Start at boot, Docker support, APT-Cacher, verbose mode |
 | Devices | GPU, TUN device, USB serial devices (distribution containers and apps that use them) |
 | *App name* | The app's own settings when it has any |
+
+To recreate a container with this script, for example on another distribution, back it up then destroy it and choose its backup in **Based on**: the new container keeps its ID, hostname, MAC address and IP settings.
 
 The script then creates the container and installs the app inside it. A distribution container only gets its base system set up.
 

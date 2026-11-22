@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-22
+
+### Added
+
+- The new **Based on** category of the settings menu takes the settings of a container backup found on the host's storages: container ID, hostname, network, DNS, resources and options. Destroy the old container first to keep its ID, MAC address and IP settings.
+
 ## 2026-11-21
 
 ### Added

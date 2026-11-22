@@ -8,7 +8,7 @@
 default_settings() {
   # The first supported distribution, in its latest version unless the app needs another
   var_os="${var_os_supported%% *}"
-  var_os_version="${var_os_version:-$(os_default_version "$var_os")}"
+  var_os_version="${APP_OS_VERSION:-$(os_default_version "$var_os")}"
   # Default to the storages the Proxmox VE installer creates
   DEFAULT_TEMPLATE_STORAGE=$(preferred_storage "$TEMPLATE_STORAGE_LIST" local local-btrfs)
   TEMPLATE_STORAGE="$DEFAULT_TEMPLATE_STORAGE"
@@ -40,6 +40,8 @@ default_settings() {
   TUN="${var_tun:-no}"
   USB_DEVICES=""
   VERBOSE="no"
+  BASE_BACKUP=""
+  BASE_BACKUP_LABEL=""
   # The lxc script's app_settings values, if any
   if declare -F app_default_settings >/dev/null; then
     app_default_settings
@@ -164,6 +166,151 @@ disk_space_warning() {
 }
 
 # step_* functions: one settings window each for run_steps, returning 0 Next, 1 Back, 255 ESC or 2 when nothing is shown
+
+# The latest backup of each container across the backup storages, newest first, the cursor on the one named like the app
+step_base_backup() {
+  local menu=() default="" storages storage stamp vmid volid name date backup
+  local -A ids=() names=() dates=()
+  echo "Reading the backups..."
+  # Proxmox Backup Server is left out, its backups are not vzdump files. An unreachable storage is not active
+  storages=$(pvesm status -content backup 2>/dev/null | awk 'NR>1 && $2 != "pbs" && $3 == "active" {print $1}') || true
+  # vzdump names its files vzdump-lxc-<ID>-<YYYY_MM_DD-HH_MM_SS>: "stamp ID volid" lines, the newest of each ID kept
+  while read -r stamp vmid volid; do
+    # Stops at the first snapshot section, which has its own hostname
+    name=$(pvesm extractconfig "$volid" 2>/dev/null | sed -n '/^\[/q; s/^hostname: //p') || true
+    date="${stamp:0:4}-${stamp:5:2}-${stamp:8:2}"
+    ids[$volid]="$vmid"
+    names[$volid]="$name"
+    dates[$volid]="$date"
+    menu+=("$volid" "$(printf '%-6s %s %s  %-15s %s' "$vmid" "$date" "${stamp:11:2}:${stamp:14:2}" "$name" "${volid%%:*}")")
+    if [ -z "$default" ] && [ "$name" == "$APP_SLUG" ]; then
+      default="$volid"
+    fi
+  done < <(
+    for storage in $storages; do
+      pvesm list "$storage" -content backup 2>/dev/null || true
+    done |
+      awk 'match($1, /vzdump-lxc-[0-9]+-[0-9_]+-[0-9_]+\./) {print substr($1, RSTART + RLENGTH - 20, 19), $5, $1}' |
+      sort -r | awk '!seen[$2]++' || true
+  )
+  if [ ${#menu[@]} -eq 0 ]; then
+    wt --title "BACKUP" --msgbox "No container backup found on this host\nProxmox Backup Server is not supported"
+    return 1
+  fi
+  menu+=("defaults" "Default settings")
+  default="${BASE_BACKUP:-${default:-${menu[0]}}}"
+  backup=$(wt --title "BACKUP" --notags --default-item "$default" --menu "Choose the backup to take the container settings from\nIts values replace the current settings" "${menu[@]}") || return
+  if [ "$backup" == "defaults" ]; then
+    default_settings
+    return
+  fi
+  apply_backup_config "$backup" "${ids[$backup]}"
+  BASE_BACKUP="$backup"
+  BASE_BACKUP_LABEL="${ids[$backup]} ${names[$backup]:-?} ${dates[$backup]}"
+}
+
+# Puts the container config of backup $1 into the settings, $2 being the backed up container's ID
+# Keys missing from the config take Proxmox's defaults
+apply_backup_config() {
+  local config line key value os="" cores="" memory="" rootfs="" net0="" size part ip="dhcp" gw="" bridge=""
+  config=$(pvesm extractconfig "$1" 2>/dev/null) || true
+  ONBOOT="no"
+  UNPRIVILEGED="0"
+  DOCKER_SUPPORT="no"
+  DNS_SERVER=""
+  SEARCH_DOMAIN=""
+  while IFS= read -r line; do
+    # Snapshot sections come after the container's own config
+    [[ "$line" == "["* ]] && break
+    [[ "$line" == *": "* && "$line" != "#"* ]] || continue
+    key="${line%%: *}"
+    value="${line#*: }"
+    case "$key" in
+      hostname) CT_HOSTNAME="$value" ;;
+      onboot) ONBOOT=$([ "$value" == "1" ] && echo yes || echo no) ;;
+      unprivileged) UNPRIVILEGED="$value" ;;
+      features)
+        if [[ ",$value," == *",keyctl=1,"* ]]; then
+          DOCKER_SUPPORT="yes"
+        fi ;;
+      nameserver) DNS_SERVER="$value" ;;
+      searchdomain) SEARCH_DOMAIN="$value" ;;
+      ostype) os="$value" ;;
+      cores) cores="$value" ;;
+      memory) memory="$value" ;;
+      rootfs) rootfs="$value" ;;
+      net0) net0="$value" ;;
+    esac
+  done <<< "$config"
+
+  # A distribution change resets the resources, so it comes before them
+  if [[ " $var_os_supported " == *" $os "* ]] && [ "$os" != "$var_os" ]; then
+    var_os="$os"
+    var_os_version=$(os_default_version "$os")
+    default_resources
+  fi
+  CORE_COUNT="${cores:-$CORE_COUNT}"
+  RAM_SIZE="${memory:-$RAM_SIZE}"
+  # rootfs: <storage>:<volume>,size=<number><M|G|T>
+  size=$(sed -n 's/.*size=\([0-9.]*\)\([MGT]\).*/\1 \2/p' <<< "$rootfs")
+  if [ -n "$size" ]; then
+    DISK_SIZE=$(awk '{printf "%g", $2 == "M" ? $1 / 1024 : $2 == "T" ? $1 * 1024 : $1}' <<< "$size")
+  fi
+  if [ -n "$(storage_free "${rootfs%%:*}")" ]; then
+    CONTAINER_STORAGE="${rootfs%%:*}"
+    CONTAINER_STORAGE_FREE=$(storage_free "$CONTAINER_STORAGE")
+  fi
+
+  if [ -n "$net0" ]; then
+    MAC=""
+    VLAN=""
+    MTU=""
+    while IFS= read -r part; do
+      case "$part" in
+        bridge=*) bridge="${part#*=}" ;;
+        hwaddr=*) MAC="${part#*=}" ;;
+        ip=*) ip="${part#*=}" ;;
+        gw=*) gw="${part#*=}" ;;
+        tag=*) VLAN="${part#*=}" ;;
+        mtu=*) MTU="${part#*=}" ;;
+      esac
+    done <<< "${net0//,/$'\n'}"
+    if [[ " ${BRIDGE_NAMES[*]} " == *" $bridge "* ]]; then
+      BRIDGE="$bridge"
+    fi
+    # Static address or dhcp, anything else (manual) becomes dhcp
+    if [[ "$ip" =~ /([0-9]|[12][0-9]|3[0-2])$ ]] && is_ipv4 "${ip%/*}"; then
+      IPV4="$ip"
+      # The host's gateway when the backup has none, like step_gateway
+      GATEWAY="${gw:-$(ip route show default | awk '{print $3; exit}')}" || true
+    else
+      IPV4="dhcp"
+    fi
+  fi
+
+  # Checks every VM and container of the cluster, like step_ct_id
+  if pvesh get /cluster/nextid --vmid "$2" &>/dev/null; then
+    CT_ID="$2"
+  else
+    # Its MAC and IP would clash with the running container's
+    CT_ID="$NEXTID"
+    MAC=""
+    IPV4="dhcp"
+    wt --title "BACKUP" --msgbox "Container $2 still exists, so the new one gets:\n- the next free ID: $NEXTID\n- a generated MAC address\n- an IPv4 address from DHCP\nDestroy the old container first to keep them."
+  fi
+}
+
+settings_base() {
+  run_steps step_base_backup
+}
+
+summary_base() {
+  if [ -n "$BASE_BACKUP" ]; then
+    echo "backup $BASE_BACKUP_LABEL"
+  else
+    echo "defaults"
+  fi
+}
 
 step_distribution() {
   local os menu=()
@@ -691,6 +838,7 @@ settings_menu() {
     clear
     menu=(
       "create" ">> Create the ${APP} LXC"
+      "base" "$(menu_line "Based on" "$(summary_base)")"
       "general" "$(menu_line General "$(summary_general)")"
       "access" "$(menu_line Access "$(summary_access)")"
       "resources" "$(menu_line Resources "$(summary_resources)")"
@@ -716,6 +864,7 @@ settings_menu() {
         if disk_fits "$DISK_SIZE" || disk_space_warning "$DISK_SIZE"; then
           return
         fi ;;
+      base) settings_base || true ;;
       general) settings_general || true ;;
       access) settings_access || true ;;
       resources) settings_resources || true ;;
@@ -730,6 +879,9 @@ settings_menu() {
 
 # "Label: value" lines, in the steps' order
 settings_summary() {
+  if [ -n "$BASE_BACKUP" ]; then
+    echo "Based on: backup $BASE_BACKUP_LABEL"
+  fi
   echo "Distribution: $var_os"
   echo "${var_os^} version: $var_os_version"
   echo "Container ID: $CT_ID"
@@ -789,6 +941,8 @@ choose_settings() {
     TIMEZONE="UTC"
   fi
   host_lists
+  # The version the lxc script needs, if any: var_os_version follows the chosen distribution
+  APP_OS_VERSION="${var_os_version:-}"
   # Every setting gets a value before the menu shows them
   default_settings
   settings_menu
