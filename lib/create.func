@@ -231,7 +231,7 @@ step_base_backup() {
 # Puts the container config of backup $1 into the settings, $2 being the backed up container's ID
 # Keys missing from the config take Proxmox's defaults
 apply_backup_config() {
-  local config line key value os="" cores="" memory="" rootfs="" net0="" size part ip="dhcp" gw="" bridge=""
+  local config line key value os="" cores="" memory="" rootfs="" net0="" size part ip="dhcp" gw="" bridge="" devices="" path
   config=$(pvesm extractconfig "$1" 2>/dev/null) || true
   ONBOOT="no"
   UNPRIVILEGED="0"
@@ -259,6 +259,7 @@ apply_backup_config() {
       memory) memory="$value" ;;
       rootfs) rootfs="$value" ;;
       net0) net0="$value" ;;
+      dev[0-9]*) devices+="${value%%,*}"$'\n' ;;
     esac
   done <<< "$config"
 
@@ -305,6 +306,21 @@ apply_backup_config() {
     else
       IPV4="dhcp"
     fi
+  fi
+
+  # The devN lines of our tools, else the defaults stay
+  if [ "${var_devices:-no}" == "yes" ] && [ -n "$devices" ]; then
+    GPU_DEVICE=""
+    TUN="no"
+    USB_DEVICES=""
+    while read -r path; do
+      [ -e "$path" ] || continue
+      case "$path" in
+        /dev/net/tun) TUN="yes" ;;
+        /dev/serial/by-id/*) USB_DEVICES="${USB_DEVICES:+$USB_DEVICES }${path##*/}" ;;
+        /dev/dri/renderD*) GPU_DEVICE="${path##*/}" ;;
+      esac
+    done <<< "$devices"
   fi
 
   # Checks every VM and container of the cluster, like step_ct_id
