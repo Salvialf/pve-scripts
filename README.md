@@ -33,7 +33,7 @@ The script opens a settings menu with the container's recommended settings. Its 
 
 | Category | Settings |
 |---|---|
-| Based on | Default settings or the latest backup of a container on the host's storages (not Proxmox Backup Server), whose settings fill the other categories |
+| Based on | Default settings or settings prefilled from a container backup (not Proxmox Backup Server). Some apps can also restore their data from it (see the Backup and restore section of their page) |
 | General | Distribution and version, container ID, hostname, unprivileged or privileged container |
 | Access | Root password, root SSH access |
 | Resources | Template and container storages, disk size, CPU cores, RAM |

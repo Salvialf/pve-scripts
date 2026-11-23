@@ -42,6 +42,7 @@ default_settings() {
   VERBOSE="no"
   BASE_BACKUP=""
   BASE_BACKUP_LABEL=""
+  BASE_APP_DATA="no"
   # The lxc script's app_settings values, if any
   if declare -F app_default_settings >/dev/null; then
     app_default_settings
@@ -173,7 +174,8 @@ read_backups() {
   local storages storage stamp vmid volid name date
   BACKUP_MENU=()
   BACKUP_OF_APP=""
-  declare -gA BACKUP_IDS=() BACKUP_NAMES=() BACKUP_DATES=()
+  # BACKUP_DATA: the app data each backup holds, filled by step_base_app_data
+  declare -gA BACKUP_IDS=() BACKUP_NAMES=() BACKUP_DATES=() BACKUP_DATA=()
   echo "Reading the backups..."
   # Proxmox Backup Server is left out, its backups are not vzdump files. An unreachable storage is not active
   storages=$(pvesm status -content backup 2>/dev/null | awk 'NR>1 && $2 != "pbs" && $3 == "active" {print $1}') || true
@@ -217,6 +219,9 @@ step_base_backup() {
   if [ "$backup" == "defaults" ]; then
     default_settings
     return
+  fi
+  if [ "$backup" != "$BASE_BACKUP" ]; then
+    BASE_APP_DATA="no"
   fi
   apply_backup_config "$backup" "${BACKUP_IDS[$backup]}"
   BASE_BACKUP="$backup"
@@ -314,15 +319,65 @@ apply_backup_config() {
   fi
 }
 
+# Writes the uncompressed archive of backup $1, its extension giving the compression (vzdump --compress)
+decompress_backup() {
+  local file
+  file=$(pvesm path "$1") || return
+  case "$file" in
+    *.zst) zstd -dc "$file" ;;
+    *.gz | *.tgz) gzip -dc "$file" ;;
+    *.lzo) lzop -dc "$file" ;;
+    *) cat "$file" ;;
+  esac
+}
+
+# "source target" lines for the var_data entries backup $1 holds: an entry is a target path, then its older locations after ":"
+list_app_data() {
+  local members entry path
+  # Archive members are named ./path, directories end with /
+  members=$(decompress_backup "$1" | tar -t 2>/dev/null | sed 's|^\.||; s|/$||' || true)
+  for entry in $var_data; do
+    for path in ${entry//:/ }; do
+      if grep -qxF "$path" <<< "$members"; then
+        echo "$path ${entry%%:*}"
+        break
+      fi
+    done
+  done
+}
+
+# Offered when the loaded backup holds some of the app's data, the paths the lxc script lists in var_data
+step_base_app_data() {
+  if [ -z "$BASE_BACKUP" ] || [ -z "${var_data:-}" ]; then
+    return 2
+  fi
+  local found data
+  if [ -z "${BACKUP_DATA[$BASE_BACKUP]+read}" ]; then
+    echo "Reading the backup's files..."
+    BACKUP_DATA[$BASE_BACKUP]=$(list_app_data "$BASE_BACKUP")
+    clear
+  fi
+  found="${BACKUP_DATA[$BASE_BACKUP]}"
+  if [ -z "$found" ]; then
+    BASE_APP_DATA="no"
+    wt --title "APP DATA" --msgbox "This backup holds no ${APP} data\nThe new container gets a fresh ${APP} setup"
+    return
+  fi
+  data=$(wt --title "APP DATA" --notags --default-item "$BASE_APP_DATA" --menu "Restore the ${APP} data from the backup?\nIt replaces in the new container:\n$(awk '{print $2}' <<< "$found")" "yes" "Yes" "no" "No") || return
+  BASE_APP_DATA="$data"
+}
+
 settings_base() {
-  run_steps step_base_backup
+  run_steps step_base_backup step_base_app_data
 }
 
 summary_base() {
-  if [ -n "$BASE_BACKUP" ]; then
-    echo "backup $BASE_BACKUP_LABEL"
-  else
+  if [ -z "$BASE_BACKUP" ]; then
     echo "defaults"
+  elif [ "$BASE_APP_DATA" == "yes" ]; then
+    echo "backup $BASE_BACKUP_LABEL, ${APP} data"
+  else
+    echo "backup $BASE_BACKUP_LABEL"
   fi
 }
 
@@ -894,7 +949,7 @@ settings_menu() {
 # "Label: value" lines, in the steps' order
 settings_summary() {
   if [ -n "$BASE_BACKUP" ]; then
-    echo "Based on: backup $BASE_BACKUP_LABEL"
+    echo "Based on: $(summary_base)"
   fi
   echo "Distribution: $var_os"
   echo "${var_os^} version: $var_os_version"
@@ -1138,6 +1193,41 @@ run_install() {
   lxc-attach -n "$CT_ID" -- bash -c "$INSTALL_SCRIPT" || exit
 }
 
+# Replaces the new install's files with the app data of the base backup, each path keeping the owner the install gave it
+import_app_data() {
+  if [ "$BASE_APP_DATA" != "yes" ]; then
+    return
+  fi
+  local service="${var_service:-$APP_SLUG}" tmp="/var/tmp/pve-scripts-data" data="${BACKUP_DATA[$BASE_BACKUP]}" source target owner
+  local sources=()
+  msg_info "Restoring the ${APP} data from the backup"
+  while read -r source target; do
+    sources+=("./${source#/}")
+  done <<< "$data"
+  ct_service stop "$service"
+  ct_exec mkdir -p "$tmp"
+  # Extracted aside first: a failure leaves the new install as it is
+  if ! decompress_backup "$BASE_BACKUP" | pct exec "$CT_ID" -- tar -x -C "$tmp" "${sources[@]}"; then
+    ct_exec rm -rf "$tmp"
+    ct_service start "$service"
+    msg_error "Unable to restore the ${APP} data, the container keeps a fresh ${APP} setup"
+    return
+  fi
+  while read -r source target; do
+    # The backup's user ids may belong to other users here
+    owner=$(ct_exec stat -c '%u:%g' "$target" 2>/dev/null) || owner=""
+    ct_exec rm -rf "$target"
+    ct_exec mkdir -p "${target%/*}"
+    ct_exec mv "$tmp$source" "$target"
+    if [ -n "$owner" ]; then
+      ct_exec chown -R "$owner" "$target"
+    fi
+  done <<< "$data"
+  ct_exec rm -rf "$tmp"
+  ct_service start "$service"
+  msg_ok "Restored the ${APP} data from the backup"
+}
+
 # Creates and starts the container, then runs install/<app>-install.sh inside it
 build_container() {
   download_install_files
@@ -1147,11 +1237,21 @@ build_container() {
   wait_for_network
   network_check
   run_install
+  import_app_data
 }
 
 # With the terminal as input, lxc-attach can kill the command with SIGHUP when its output goes elsewhere
 ct_exec() {
   pct exec "$CT_ID" -- "$@" </dev/null
+}
+
+# Runs action $1 (start, stop) on the container's service $2
+ct_service() {
+  if [ "$var_os" == "alpine" ]; then
+    ct_exec rc-service "$2" "$1" >/dev/null
+  else
+    ct_exec systemctl "$1" "$2"
+  fi
 }
 
 get_ip() {

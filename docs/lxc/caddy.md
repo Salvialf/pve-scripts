@@ -38,9 +38,9 @@ Caddy reads `/etc/caddy/Caddyfile`. After a change, apply it without interruptin
 - Debian and Ubuntu: `systemctl reload caddy`
 - Alpine: `rc-service caddy reload`
 
-## Backup
+## Backup and restore
 
-To back up Caddy, keep a copy of `/etc/caddy/Caddyfile` (its configuration) and `/var/lib/caddy/.local/share/caddy` (its certificates, which Caddy would otherwise request again).
+Back up the container with Proxmox VE. To restore Caddy in a new container, for example on another distribution, choose this backup in the **Based on** settings and answer Yes to restoring the Caddy data: its configuration (`/etc/caddy`) and its certificates and state (`/var/lib/caddy`) are copied after the install, so Caddy doesn't request its certificates again.
 
 ## Update
 

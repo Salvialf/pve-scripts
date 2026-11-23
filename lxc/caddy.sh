@@ -21,6 +21,7 @@ APP="Caddy"
 var_disk_alpine="1"
 var_os_supported="debian ubuntu alpine"
 var_onboot="yes"
+var_data="/etc/caddy /var/lib/caddy"
 var_color_primary="color35"
 var_color_theme="dark"
 init_script

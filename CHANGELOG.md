@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-23
+
+### Added
+
+- **Based on** can restore the Caddy configuration and certificates from the backup, after the install.
+
 ## 2026-11-22
 
 ### Added
