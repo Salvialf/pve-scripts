@@ -12,6 +12,9 @@ prepare_container
 if is_alpine; then
   msg_info "Installing Caddy"
   install_packages caddy
+  # Like Caddy's Debian package, so a log file in /var/log/caddy works
+  mkdir -p /var/log/caddy
+  chown caddy:caddy /var/log/caddy
   # apk neither starts a service nor enables it at boot
   enable_service caddy
   msg_ok "Installed Caddy"

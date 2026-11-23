@@ -10,6 +10,10 @@
 
 - **Based on** can restore the Caddy configuration and certificates from the backup, after the install.
 
+### Fixed
+
+- A Caddyfile writing its logs to `/var/log/caddy` no longer stops Caddy from starting on Alpine: the install now creates this directory like on Debian and Ubuntu.
+
 ## 2026-11-22
 
 ### Added
