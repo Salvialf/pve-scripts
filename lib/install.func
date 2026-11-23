@@ -4,11 +4,6 @@
 # Author: tteck (tteckster) | Salvialf
 # License: MIT | https://github.com/Salvialf/pve-scripts/raw/main/LICENSE
 
-# Alpine, else the Debian family (Debian, Ubuntu)
-is_alpine() {
-  [ -f /etc/alpine-release ]
-}
-
 # Run by every install script before the app's own steps
 prepare_container() {
   color

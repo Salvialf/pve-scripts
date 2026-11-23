@@ -94,7 +94,8 @@ function reset_admin_token() {
 
 if [ "${RESET_ADMIN_TOKEN:-}" == "yes" ]; then
   if is_pve; then
-    msg_error "Run RESET_ADMIN_TOKEN=yes update inside the ${APP} container"
+    msg_error "Run this command inside the ${APP} container:"
+    echo -e "         ${BL}RESET_ADMIN_TOKEN=yes update${CL}"
     exit 1
   fi
   reset_admin_token

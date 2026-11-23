@@ -10,6 +10,7 @@
 
 - **Based on** can restore the data of AdGuard Home, Caddy and Z-Wave JS UI from the backup.
 - **Based on** also takes the backup's devices (GPU, TUN, USB serial) that are plugged into this host.
+- `RESET_MQTT_PASSWORD=yes update` in a [Mosquitto container](docs/lxc/mosquitto.md#users) adds an MQTT user or changes its password.
 
 ### Fixed
 

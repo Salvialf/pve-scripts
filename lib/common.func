@@ -179,6 +179,11 @@ is_pve() {
   command -v pveversion >/dev/null 2>&1
 }
 
+# Alpine, else the Debian family (Debian, Ubuntu)
+is_alpine() {
+  [ -f /etc/alpine-release ]
+}
+
 # Tested versions only, not a minimum: a new major has to be checked before it gets added
 pve_check() {
   if ! is_pve; then

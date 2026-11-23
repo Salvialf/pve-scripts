@@ -38,20 +38,21 @@ The connection is not encrypted: keep the broker on a trusted local network.
 
 ## Users
 
-From the container's console, add a user or change a password (asked twice):
+Run from the container's console to add a user or change a password:
 
 ```bash
-mosquitto_passwd /etc/mosquitto/passwd <user>
+RESET_MQTT_PASSWORD=yes update
 ```
 
-Then reload the broker, which applies the change without disconnecting the clients:
+It asks the user and the password like the settings menu and reloads the broker without disconnecting the clients.
+
+Remove a user with `mosquitto_passwd -D /etc/mosquitto/passwd <user>` then reload the broker:
 
 - Debian and Ubuntu: `systemctl reload mosquitto`
 - Alpine: `kill -HUP $(cat /run/mosquitto.pid)`
 
-Remove a user with `mosquitto_passwd -D /etc/mosquitto/passwd <user>`, then reload the same way.
-
-`mosquitto_passwd` warns that the file's owner is not root: the file belongs to the `mosquitto` user on purpose, so that only the broker can read it.
+> [!NOTE]
+> `mosquitto_passwd` warns that the file's owner is not root: the file belongs to the `mosquitto` user on purpose so that only the broker can read it.
 
 ## Update
 
