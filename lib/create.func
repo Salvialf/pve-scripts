@@ -1211,6 +1211,8 @@ import_app_data() {
     ct_exec rm -rf "$tmp"
     ct_service start "$service"
     msg_error "Unable to restore the ${APP} data, the container keeps a fresh ${APP} setup"
+    # Read by the lxc script's final message
+    BASE_APP_DATA="no"
     return
   fi
   while read -r source target; do

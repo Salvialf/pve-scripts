@@ -31,9 +31,12 @@ At the end, the script shows the address of AdGuard Home's setup wizard, on port
 > [!NOTE]
 > Other Debian versions, Ubuntu and Alpine are available in the General settings.
 
-## Backup
+## Backup and restore
 
-To back up AdGuard Home, keep a copy of `/opt/AdGuardHome/AdGuardHome.yaml` (its settings) and `/opt/AdGuardHome/data` (statistics, query log, filter lists).
+Back up the container with Proxmox VE. To restore AdGuard Home in a new container, for example on another distribution, choose this backup in the **Based on** settings and answer Yes to restoring the AdGuard Home data: its settings (`/opt/AdGuardHome/AdGuardHome.yaml`) and its statistics, query log and filter lists (`/opt/AdGuardHome/data`) are copied.
+
+> [!NOTE]
+> When the AdGuard Home data is restored there is no setup wizard on port `3000`: the web interface opens directly on the port set in the backup, `80` by default.
 
 ## Update
 

@@ -40,9 +40,11 @@ In Z-Wave JS UI's settings, set the serial port to the key's `/dev/serial/by-id/
 
 The key can also stay plugged into another machine, or be a network Z-Wave controller: the container then needs no device, set the serial port to `tcp://<ip>:<port>` instead. See [Remote serial port over TCP](https://zwave-js.github.io/zwave-js/#/usage/tcp-connection) for the other machine's setup. This connection is neither authenticated nor encrypted: keep it on a trusted local network.
 
-## Data
+## Backup and restore
 
 Z-Wave JS UI keeps its settings, network data and backups in `/var/lib/zwave-js-ui`, apart from the program in `/opt/zwave-js-ui`, which updates replace.
+
+Back up the container with Proxmox VE. To restore Z-Wave JS UI in a new container, choose this backup in the **Based on** settings and answer Yes to restoring the Z-Wave JS UI data: `/var/lib/zwave-js-ui` is copied (from `/opt/zwave_store` or `/opt/zwave-js-ui/store` in a backup made by another script).
 
 ## Update
 

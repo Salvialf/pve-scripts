@@ -21,6 +21,8 @@ var_disk_debian="3"
 var_disk_alpine="2"
 var_os_supported="debian ubuntu alpine"
 var_onboot="yes"
+var_data="/opt/AdGuardHome/AdGuardHome.yaml /opt/AdGuardHome/data"
+var_service="AdGuardHome"
 var_color_primary="color72"
 var_color_theme="dark"
 init_script
@@ -43,5 +45,10 @@ function app_update() {
 }
 
 create_or_update
-echo -e "Finish the ${APP} setup at the following URL:
+if [ "$BASE_APP_DATA" == "yes" ]; then
+  echo -e "Access ${APP} at the following URL (add its port if it isn't 80):
+         ${BL}http://$(get_ip)${CL}\n"
+else
+  echo -e "Finish the ${APP} setup at the following URL:
          ${BL}http://$(get_ip):3000${CL}\n"
+fi

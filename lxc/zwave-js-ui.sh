@@ -23,6 +23,7 @@ var_ram="1024"
 var_os_supported="debian ubuntu"
 var_onboot="yes"
 var_devices="yes"
+var_data="/var/lib/zwave-js-ui:/opt/zwave_store:/opt/zwave-js-ui/store"
 var_color_primary="color25"
 init_script
 

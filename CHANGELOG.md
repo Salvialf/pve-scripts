@@ -8,7 +8,7 @@
 
 ### Added
 
-- **Based on** can restore the Caddy configuration and certificates from the backup, after the install.
+- **Based on** can restore the data of AdGuard Home, Caddy and Z-Wave JS UI from the backup.
 
 ### Fixed
 

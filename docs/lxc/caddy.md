@@ -40,7 +40,7 @@ Caddy reads `/etc/caddy/Caddyfile`. After a change, apply it without interruptin
 
 ## Backup and restore
 
-Back up the container with Proxmox VE. To restore Caddy in a new container, for example on another distribution, choose this backup in the **Based on** settings and answer Yes to restoring the Caddy data: its configuration (`/etc/caddy`) and its certificates and state (`/var/lib/caddy`) are copied after the install, so Caddy doesn't request its certificates again.
+Back up the container with Proxmox VE. To restore Caddy in a new container, for example on another distribution, choose this backup in the **Based on** settings and answer Yes to restoring the Caddy data: its configuration (`/etc/caddy`) and its certificates and state (`/var/lib/caddy`) are copied, so Caddy doesn't request its certificates again.
 
 ## Update
 
