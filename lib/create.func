@@ -210,12 +210,12 @@ step_base_backup() {
     read_backups
   fi
   if [ ${#BACKUP_MENU[@]} -eq 0 ]; then
-    wt --title "BACKUP" --msgbox "No container backup found on this host\nProxmox Backup Server is not supported"
+    wt --title "COPY BACKUP SETTINGS" --msgbox "No container backup found on this host\nProxmox Backup Server is not supported"
     return 1
   fi
   menu=("${BACKUP_MENU[@]}" "defaults" "Default settings")
   default="${BASE_BACKUP:-${BACKUP_OF_APP:-${menu[0]}}}"
-  backup=$(wt --title "BACKUP" --notags --default-item "$default" --menu "Choose the backup to take the container settings from\nIts values replace the current settings" "${menu[@]}") || return
+  backup=$(wt --title "COPY BACKUP SETTINGS" --notags --default-item "$default" --menu "Choose the backup to take the container settings from\nIts values replace the current settings" "${menu[@]}") || return
   if [ "$backup" == "defaults" ]; then
     default_settings
     return
@@ -315,7 +315,7 @@ apply_backup_config() {
     CT_ID="$NEXTID"
     MAC=""
     IPV4="dhcp"
-    wt --title "BACKUP" --msgbox "Container $2 still exists, so the new one gets:\n- the next free ID: $NEXTID\n- a generated MAC address\n- an IPv4 address from DHCP\nDestroy the old container first to keep them."
+    wt --title "COPY BACKUP SETTINGS" --msgbox "Container $2 still exists, so the new one gets:\n- the next free ID: $NEXTID\n- a generated MAC address\n- an IPv4 address from DHCP\nDestroy the old container first to keep them."
   fi
 }
 
@@ -360,10 +360,10 @@ step_base_app_data() {
   found="${BACKUP_DATA[$BASE_BACKUP]}"
   if [ -z "$found" ]; then
     BASE_APP_DATA="no"
-    wt --title "APP DATA" --msgbox "This backup holds no ${APP} data\nThe new container gets a fresh ${APP} setup"
+    wt --title "RESTORE ${APP^^} DATA" --msgbox "This backup holds no ${APP} data\nThe new container gets a fresh ${APP} setup"
     return
   fi
-  data=$(wt --title "APP DATA" --notags --default-item "$BASE_APP_DATA" --menu "Restore the ${APP} data from the backup?\nIt replaces in the new container:\n$(awk '{print $2}' <<< "$found")" "yes" "Yes" "no" "No") || return
+  data=$(wt --title "RESTORE ${APP^^} DATA" --notags --default-item "$BASE_APP_DATA" --menu "Restore the ${APP} data from the backup?\nIt replaces in the new container:\n$(awk '{print $2}' <<< "$found")" "yes" "Yes" "no" "No") || return
   BASE_APP_DATA="$data"
 }
 
