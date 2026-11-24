@@ -17,6 +17,8 @@ A DNS server must keep its address: set a fixed IP in the Network settings, or r
 
 At the end, the script shows the address of AdGuard Home's setup wizard, on port `3000`: create the admin account and choose the ports there. The web interface then moves to the port chosen in the wizard, `80` by default, so the container's address alone opens it.
 
+Once AdGuard Home is set up, set the container's address as the DNS server in the router's DHCP settings. If the network uses IPv6, keep IPv6 enabled in the container and set its IPv6 address as the router's IPv6 DNS server.
+
 ## Default settings
 
 | Setting | Value |
