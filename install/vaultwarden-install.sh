@@ -36,9 +36,14 @@ fi
 
 if [ -n "$VAULTWARDEN_ADMIN_TOKEN" ]; then
   msg_info "Setting the admin token"
-  install_packages argon2
-  # Settings recommended by the Vaultwarden wiki (OWASP)
-  hash=$(printf '%s' "$VAULTWARDEN_ADMIN_TOKEN" | argon2 "$(head -c 32 /dev/urandom | base64)" -e -id -k 19456 -t 2 -p 1)
+  # A token kept from a backup is already hashed
+  if [[ "$VAULTWARDEN_ADMIN_TOKEN" == '$argon2'* ]]; then
+    hash="$VAULTWARDEN_ADMIN_TOKEN"
+  else
+    install_packages argon2
+    # Settings recommended by the Vaultwarden wiki (OWASP)
+    hash=$(printf '%s' "$VAULTWARDEN_ADMIN_TOKEN" | argon2 "$(head -c 32 /dev/urandom | base64)" -e -id -k 19456 -t 2 -p 1)
+  fi
   echo "export ADMIN_TOKEN='${hash}'" >>/etc/conf.d/vaultwarden
   msg_ok "Set the admin token"
 fi

@@ -20,6 +20,7 @@ APP="Vaultwarden"
 # Debian has no package, building it needs several GB of RAM at each update
 var_os_supported="alpine"
 var_onboot="yes"
+var_data="/var/lib/vaultwarden:/opt/vaultwarden/data /etc/ssl/vaultwarden/cert.pem /etc/ssl/vaultwarden/key.pem"
 var_color_primary="color26"
 app_settings=(step_vaultwarden_https step_vaultwarden_admin_token)
 init_script
@@ -45,6 +46,38 @@ function app_default_settings() {
 function app_summary() {
   echo "HTTPS: $([ "$VAULTWARDEN_HTTPS" == "proxy" ] && echo "reverse proxy" || echo "self-signed certificate")"
   echo "Admin page: $([ -n "$VAULTWARDEN_ADMIN_TOKEN" ] && echo "token set" || echo "disabled (no token)")"
+}
+
+# The backup's HTTPS and admin token, prefilled in the menu like settings chosen by hand
+function app_backup_settings() {
+  local conf path token=""
+  # Startup settings: conf.d on Alpine, .env from the Debian scripts
+  conf=$(read_backup_file /etc/conf.d/vaultwarden; read_backup_file /opt/vaultwarden/.env)
+  if grep -qE '^(export )?ROCKET_TLS=' <<< "$conf"; then
+    VAULTWARDEN_HTTPS="self-signed"
+  else
+    VAULTWARDEN_HTTPS="proxy"
+  fi
+  # config.json, written by the admin page, overrides the startup settings
+  for path in /var/lib/vaultwarden/config.json /opt/vaultwarden/data/config.json; do
+    if [ -z "$token" ]; then
+      token=$(read_backup_file "$path" | sed -n 's/^ *"admin_token": *"\(.*\)",\{0,1\}$/\1/p')
+    fi
+  done
+  if [ -z "$token" ]; then
+    token=$(sed -n "s/^\(export \)\{0,1\}ADMIN_TOKEN='\(.*\)'$/\2/p" <<< "$conf" | tail -n 1)
+  fi
+  VAULTWARDEN_ADMIN_TOKEN="$token"
+}
+
+# Leaves the menu's admin token as the only one: a token in the restored config.json would override it
+function app_post_restore() {
+  local config=/var/lib/vaultwarden/config.json
+  if ct_exec test -f "$config"; then
+    ct_exec apk add jq &>/dev/null
+    # Rewritten in place, so the file keeps its owner
+    ct_exec sh -c "jq 'del(.admin_token)' $config >/tmp/config.json && cat /tmp/config.json >$config && rm /tmp/config.json"
+  fi
 }
 
 function app_description() {

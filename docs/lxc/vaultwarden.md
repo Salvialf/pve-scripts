@@ -78,9 +78,11 @@ RESET_ADMIN_TOKEN=yes update
 
 Disabling the page once Vaultwarden is configured is a good habit when it is reachable from the internet: the settings saved from the admin page stay applied.
 
-## Backup
+## Backup and restore
 
-To back up Vaultwarden, keep a copy of `/var/lib/vaultwarden` (database, attachments, keys and the settings saved from the admin page) and `/etc/conf.d/vaultwarden` (its startup settings, admin token included).
+Back up the container with Proxmox VE. To restore Vaultwarden in a new container, choose this backup in the **Based on** settings and answer Yes to restoring the Vaultwarden data: `/var/lib/vaultwarden` (from `/opt/vaultwarden/data` in a backup made by another script) and the self-signed certificate are copied. The HTTPS and admin token settings take the backup's values and can still be changed in the menu.
+
+Check that the new container runs a Vaultwarden version at least as recent as the old one: data restored into an older version may not work.
 
 ## Update
 

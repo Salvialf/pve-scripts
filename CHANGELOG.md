@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-24
+
+### Added
+
+- **Based on** can restore the Vaultwarden data from the backup. Its HTTPS and admin token settings take the backup's values.
+
 ## 2026-11-23
 
 ### Added

@@ -362,6 +362,11 @@ list_app_data() {
   done
 }
 
+# Prints file $1 of the base backup, nothing when the backup doesn't hold it
+read_backup_file() {
+  decompress_backup "$BASE_BACKUP" | tar -xO "./${1#/}" 2>/dev/null || true
+}
+
 # Offered when the loaded backup holds some of the app's data, the paths the lxc script lists in var_data
 step_base_app_data() {
   if [ -z "$BASE_BACKUP" ] || [ -z "${var_data:-}" ]; then
@@ -380,6 +385,12 @@ step_base_app_data() {
     return
   fi
   data=$(wt --title "RESTORE ${APP^^} DATA" --notags --default-item "$BASE_APP_DATA" --menu "Restore the ${APP} data from the backup?\nIt replaces in the new container:\n$(awk '{print $2}' <<< "$found")" "yes" "Yes" "no" "No") || return
+  # Not when answering Yes again: the app's settings may have been changed in the menu since
+  if [ "$data" == "yes" ] && [ "$BASE_APP_DATA" != "yes" ] && declare -F app_backup_settings >/dev/null; then
+    echo "Reading the backup's files..."
+    app_backup_settings
+    clear
+  fi
   BASE_APP_DATA="$data"
 }
 
@@ -1242,6 +1253,10 @@ import_app_data() {
     fi
   done <<< "$data"
   ct_exec rm -rf "$tmp"
+  # Applies the menu's settings to the restored data, before the service reads them
+  if declare -F app_post_restore >/dev/null; then
+    app_post_restore
+  fi
   ct_service start "$service"
   msg_ok "Restored the ${APP} data from the backup"
 }
