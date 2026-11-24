@@ -1231,6 +1231,10 @@ import_app_data() {
   while read -r source target; do
     sources+=("./${source#/}")
   done <<< "$data"
+  # BusyBox tar puts the backup's sparse files under GNUSparseFile.<pid>/ instead of their path
+  if [ "$var_os" == "alpine" ]; then
+    ct_exec apk add -q tar
+  fi
   ct_service stop "$service"
   ct_exec mkdir -p "$tmp"
   # Extracted aside first: a failure leaves the new install as it is

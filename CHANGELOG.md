@@ -10,6 +10,10 @@
 
 - **Based on** can restore the Vaultwarden data from the backup. Its HTTPS and admin token settings take the backup's values.
 
+### Fixed
+
+- **Based on** no longer leaves out some app data files in an Alpine container, such as the AdGuard Home statistics.
+
 ## 2026-11-23
 
 ### Added
