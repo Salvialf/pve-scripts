@@ -10,6 +10,10 @@
 
 - **Based on** can restore the Mosquitto data from the backup with all its MQTT users. The MQTT user setting takes the backup's first user and keeps its password.
 
+### Fixed
+
+- **Based on** no longer keeps the app settings read from the backup's data, such as the Mosquitto user or the Vaultwarden admin token, after answering No to restoring this data or choosing another backup.
+
 ## 2026-11-24
 
 ### Added

@@ -203,6 +203,14 @@ read_backups() {
   clear
 }
 
+# The app's settings read from the backup's data go with them
+set_base_app_data() {
+  if [ "$1" == "no" ] && [ "$BASE_APP_DATA" == "yes" ] && declare -F app_default_settings >/dev/null; then
+    app_default_settings
+  fi
+  BASE_APP_DATA="$1"
+}
+
 # The cursor on the loaded backup, else the newest one named like the app
 step_base_backup() {
   local menu default backup
@@ -221,7 +229,7 @@ step_base_backup() {
     return
   fi
   if [ "$backup" != "$BASE_BACKUP" ]; then
-    BASE_APP_DATA="no"
+    set_base_app_data no
   fi
   apply_backup_config "$backup" "${BACKUP_IDS[$backup]}"
   BASE_BACKUP="$backup"
@@ -391,7 +399,7 @@ step_base_app_data() {
     app_backup_settings
     clear
   fi
-  BASE_APP_DATA="$data"
+  set_base_app_data "$data"
 }
 
 settings_base() {
