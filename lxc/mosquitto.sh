@@ -20,6 +20,7 @@ EOF
 APP="Mosquitto"
 var_os_supported="debian ubuntu alpine"
 var_onboot="yes"
+var_data="/etc/mosquitto/conf.d /etc/mosquitto/passwd /var/lib/mosquitto"
 var_color_primary="color24"
 app_settings=(step_mosquitto_user step_mosquitto_password)
 init_script
@@ -37,6 +38,10 @@ function step_mosquitto_user() {
       break
     fi
   done
+  # The backup's hash belongs to its user, another user needs a new password
+  if [ "$user" != "$MOSQUITTO_USER" ] && [ "$MOSQUITTO_PASSWORD" == "$MOSQUITTO_BACKUP_HASH" ]; then
+    MOSQUITTO_PASSWORD=""
+  fi
   MOSQUITTO_USER="$user"
 }
 
@@ -54,7 +59,7 @@ function step_mosquitto_password() {
 }
 
 function app_default_settings() {
-  export MOSQUITTO_USER="" MOSQUITTO_PASSWORD=""
+  export MOSQUITTO_USER="" MOSQUITTO_PASSWORD="" MOSQUITTO_BACKUP_HASH=""
 }
 
 function app_summary() {
@@ -70,6 +75,25 @@ function app_check() {
   if [ -z "$MOSQUITTO_USER" ] || [ -z "$MOSQUITTO_PASSWORD" ]; then
     wt --title "MQTT USER" --msgbox "Set the MQTT user and password first\nIn the ${APP} category of the settings"
     return 1
+  fi
+}
+
+# The backup's first MQTT user and its password hash, kept until changed in the menu
+function app_backup_settings() {
+  local line
+  line=$(read_backup_file /etc/mosquitto/passwd | sed -n '1p')
+  if [ -n "$line" ]; then
+    MOSQUITTO_USER="${line%%:*}"
+    MOSQUITTO_PASSWORD="${line#*:}"
+    MOSQUITTO_BACKUP_HASH="$MOSQUITTO_PASSWORD"
+  fi
+}
+
+# The restored password file brings back the backup's users, a password typed in the menu is set on top of them
+function app_post_restore() {
+  if [ "$MOSQUITTO_PASSWORD" != "$MOSQUITTO_BACKUP_HASH" ]; then
+    # Warns that the file isn't owned by root, the broker reads it as mosquitto
+    ct_exec mosquitto_passwd -b /etc/mosquitto/passwd "$MOSQUITTO_USER" "$MOSQUITTO_PASSWORD" 2>/dev/null
   fi
 }
 

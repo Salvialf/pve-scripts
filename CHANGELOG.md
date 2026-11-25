@@ -4,6 +4,12 @@
   <p>All notable changes to this project will be documented in this file.</p>
 </div>
 
+## 2026-11-25
+
+### Added
+
+- **Based on** can restore the Mosquitto data from the backup with all its MQTT users. The MQTT user setting takes the backup's first user and keeps its password.
+
 ## 2026-11-24
 
 ### Added

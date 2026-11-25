@@ -54,6 +54,13 @@ Remove a user with `mosquitto_passwd -D /etc/mosquitto/passwd <user>` then reloa
 > [!NOTE]
 > `mosquitto_passwd` warns that the file's owner is not root: the file belongs to the `mosquitto` user on purpose so that only the broker can read it.
 
+## Backup and restore
+
+Back up the container with Proxmox VE. To restore Mosquitto in a new container, for example on another distribution, choose this backup in the **Based on** settings and answer Yes to restoring the Mosquitto data: its settings (`/etc/mosquitto/conf.d`), all its users (`/etc/mosquitto/passwd`) and its retained messages (`/var/lib/mosquitto`) are copied.
+
+> [!NOTE]
+> The MQTT user setting shows the backup's first user with its password. A password set in the menu replaces that user's password. Another user needs its own password and is added next to the restored ones.
+
 ## Update
 
 Running `update` from the container's console upgrades the OS packages, Mosquitto included.

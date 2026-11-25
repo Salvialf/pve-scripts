@@ -25,9 +25,15 @@ listener 1883
 EOF
 msg_ok "Installed Mosquitto"
 
-# MOSQUITTO_USER and MOSQUITTO_PASSWORD are exported by lxc/mosquitto.sh
+# MOSQUITTO_USER, MOSQUITTO_PASSWORD and MOSQUITTO_BACKUP_HASH are exported by lxc/mosquitto.sh
 msg_info "Creating MQTT user ${MOSQUITTO_USER}"
-$STD mosquitto_passwd -c -b /etc/mosquitto/passwd "$MOSQUITTO_USER" "$MOSQUITTO_PASSWORD"
+# A password kept from a backup is already hashed
+if [ "$MOSQUITTO_PASSWORD" == "$MOSQUITTO_BACKUP_HASH" ]; then
+  echo "${MOSQUITTO_USER}:${MOSQUITTO_PASSWORD}" >/etc/mosquitto/passwd
+  chmod 600 /etc/mosquitto/passwd
+else
+  $STD mosquitto_passwd -c -b /etc/mosquitto/passwd "$MOSQUITTO_USER" "$MOSQUITTO_PASSWORD"
+fi
 chown mosquitto:mosquitto /etc/mosquitto/passwd
 enable_service mosquitto
 msg_ok "Created MQTT user ${MOSQUITTO_USER}"
